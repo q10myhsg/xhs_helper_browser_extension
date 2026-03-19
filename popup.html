@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小红书助手-快捷页面</title>
+  <style>
+    body {
+      width: 300px;
+      padding: 15px;
+      font-family: Arial, sans-serif;
+    }
+    h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    .prompt-item {
+      padding: 10px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .prompt-item:hover {
+      background-color: #f0f0f0;
+    }
+    .no-prompts {
+      color: #999;
+      text-align: center;
+      padding: 20px;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 15px;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+    .btn:hover {
+      background-color: #0b7dda;
+    }
+  </style>
+</head>
+<body>
+  <h3>小红书助手-快捷页面</h3>
+  <div id="prompt-list"></div>
+  <button id="filter-high-value" class="btn" style="display: none;">仅显示高价值笔记</button>
+  <button id="expand-keywords" class="btn" style="display: none;">关键词拓展</button>
+  
+  <a href="options.html" class="btn" target="_blank">设置页面</a>
+  <script src="popup.js"></script>
+</body>
+</html>
