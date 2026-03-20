@@ -343,7 +343,7 @@ async function executeSearchAutomation(settings) {
   });
   
   // 10. 筛选点赞量大于设置阈值的笔记
-  const enableLikeFilter = settings.enableLikeFilter !== false; // 默认开启
+  const enableLikeFilter = settings.enableLikeFilter === true; // 默认不开启
   if (enableLikeFilter) {
     const likeThreshold = settings.likeThreshold || 30;
     console.log(`开始筛选点赞量大于${likeThreshold}的笔记`);
@@ -1003,7 +1003,7 @@ window.addEventListener('scroll', () => {
       // 加载设置并执行筛选
       chrome.storage.sync.get('downloadSettings', (data) => {
         const settings = data.downloadSettings || {};
-        const enableLikeFilter = settings.enableLikeFilter !== false; // 默认开启
+        const enableLikeFilter = settings.enableLikeFilter === true; // 默认不开启
         if (enableLikeFilter) {
           const likeThreshold = settings.likeThreshold || 30;
           console.log('滚动时触发点赞数筛选，阈值:', likeThreshold);
