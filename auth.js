@@ -3,7 +3,7 @@
 // API基础URL
 const API_BASE_URL = 'https://1259223433-0gnwuwcg9e.ap-beijing.tencentscf.com';
 // API Key（实际使用时需要替换为真实的API Key）
-const API_KEY = 'test';
+const API_KEY = 'a7f8d2e1b4c958f3a6d4c7e2b1a8c9d0';
 
 
 
