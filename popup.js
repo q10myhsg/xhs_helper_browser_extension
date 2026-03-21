@@ -2,7 +2,6 @@
 document.addEventListener('DOMContentLoaded', init);
 
 function init() {
-  loadPrompts();
   // 初始化标签页关闭监听
   initTabCloseListener();
   // 初始化时清理已关闭的标签页
@@ -69,7 +68,7 @@ function cleanupClosedTabs() {
 
 // 加载提示词列表
 function loadPrompts() {
-  chrome.storage.sync.get('prompts', (data) => {
+  chrome.storage.local.get('prompts', (data) => {
     const prompts = data.prompts || [];
     displayPrompts(prompts);
   });
@@ -80,13 +79,20 @@ function displayPrompts(prompts) {
   const promptList = document.getElementById('prompt-list');
   promptList.innerHTML = '';
   
-  if (prompts.length === 0) {
+  // 按照提示词名称字典序排序
+  const sortedPrompts = [...prompts].sort((a, b) => {
+    const nameA = (a.name || '').toLowerCase();
+    const nameB = (b.name || '').toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+  
+  if (sortedPrompts.length === 0) {
     const noPromptsMsg = document.createElement('div');
     noPromptsMsg.className = 'no-prompts';
     noPromptsMsg.textContent = '暂无提示词，请点击"管理提示词"添加';
     promptList.appendChild(noPromptsMsg);
   } else {
-    prompts.forEach((prompt, index) => {
+    sortedPrompts.forEach((prompt, index) => {
       const promptItem = document.createElement('div');
       promptItem.className = 'prompt-item';
       promptItem.textContent = prompt.name || `提示词 ${index + 1}`;
@@ -279,17 +285,24 @@ function checkIfXiaohongshuSearchPage() {
       // 检查元素是否存在
       const filterBtn = document.getElementById('filter-high-value');
       const expandBtn = document.getElementById('expand-keywords');
+      const promptList = document.getElementById('prompt-list');
       
-      if (filterBtn && expandBtn) {
+      if (filterBtn && expandBtn && promptList) {
         // 检查是否为小红书搜索页面（包含keyword参数）
         if (url.includes('xiaohongshu.com/search_result') && url.includes('keyword=')) {
           // 显示筛选高价值笔记按钮和关键词拓展按钮
           filterBtn.style.display = 'block';
           expandBtn.style.display = 'block';
+          // 隐藏提示词列表
+          promptList.style.display = 'none';
         } else {
           // 隐藏筛选高价值笔记按钮和关键词拓展按钮
           filterBtn.style.display = 'none';
           expandBtn.style.display = 'none';
+          // 显示提示词列表
+          promptList.style.display = 'block';
+          // 加载提示词
+          loadPrompts();
         }
       }
     }

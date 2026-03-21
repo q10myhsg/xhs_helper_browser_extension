@@ -144,6 +144,26 @@ function addEventListeners() {
   if (selectFolderBtn) {
     selectFolderBtn.addEventListener('click', selectFolder);
   }
+  
+  // 为导出提示词按钮添加事件监听器
+  const exportPromptsBtn = document.getElementById('export-prompts');
+  if (exportPromptsBtn) {
+    exportPromptsBtn.addEventListener('click', exportPrompts);
+  }
+  
+  // 为导入提示词按钮添加事件监听器
+  const importPromptsBtn = document.getElementById('import-prompts');
+  if (importPromptsBtn) {
+    importPromptsBtn.addEventListener('click', () => {
+      document.getElementById('import-file').click();
+    });
+  }
+  
+  // 为文件输入框添加事件监听器
+  const importFileInput = document.getElementById('import-file');
+  if (importFileInput) {
+    importFileInput.addEventListener('change', importPrompts);
+  }
 }
 
 // 简单的加密函数（使用wenyang作为密钥）
@@ -383,7 +403,7 @@ function updateAuthStatus(auth) {
 
 // 加载提示词列表
 function loadPrompts() {
-  chrome.storage.sync.get('prompts', (data) => {
+  chrome.storage.local.get('prompts', (data) => {
     prompts = data.prompts || [];
     displayPrompts(prompts);
   });
@@ -404,10 +424,17 @@ function displayPrompts(promptsToDisplay) {
   const promptList = document.getElementById('prompt-list');
   promptList.innerHTML = '';
   
-  if (promptsToDisplay.length === 0) {
+  // 按照提示词名称字典序排序
+  const sortedPrompts = [...promptsToDisplay].sort((a, b) => {
+    const nameA = (a.name || '').toLowerCase();
+    const nameB = (b.name || '').toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+  
+  if (sortedPrompts.length === 0) {
     promptList.innerHTML = '<p>暂无保存的提示词</p>';
   } else {
-    promptsToDisplay.forEach((prompt, index) => {
+    sortedPrompts.forEach((prompt, index) => {
       // 找到原始索引
       const originalIndex = prompts.findIndex(p => p.name === prompt.name && p.content === prompt.content);
       const promptItem = document.createElement('div');
@@ -469,7 +496,7 @@ function updatePrompt() {
   // 更新提示词
   prompts[editingIndex] = { name, content };
   
-  chrome.storage.sync.set({ prompts }, () => {
+  chrome.storage.local.set({ prompts }, () => {
     showSuccessMessage('提示词更新成功！');
     clearForm();
     loadPrompts();
@@ -491,11 +518,11 @@ function addPrompt() {
     return;
   }
   
-  chrome.storage.sync.get('prompts', (data) => {
+  chrome.storage.local.get('prompts', (data) => {
     const prompts = data.prompts || [];
     prompts.push({ name, content });
     
-    chrome.storage.sync.set({ prompts }, () => {
+    chrome.storage.local.set({ prompts }, () => {
       showSuccessMessage('提示词添加成功！');
       clearForm();
       loadPrompts();
@@ -512,7 +539,7 @@ function deletePrompt(index) {
   console.log('删除后的提示词：', prompts);
   
   // 保存到存储
-  chrome.storage.sync.set({ prompts }, () => {
+  chrome.storage.local.set({ prompts }, () => {
     console.log('提示词已保存到存储');
     showSuccessMessage('提示词删除成功！');
     loadPrompts();
@@ -740,4 +767,87 @@ async function loadUsageInfo() {
     document.getElementById('keyword-usage').textContent = '加载失败';
     document.getElementById('download-usage').textContent = '加载失败';
   }
+}
+
+// 导出提示词
+function exportPrompts() {
+  chrome.storage.local.get('prompts', (data) => {
+    const prompts = data.prompts || [];
+    
+    // 创建导出数据
+    const exportData = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      prompts: prompts
+    };
+    
+    // 转换为JSON字符串
+    const jsonString = JSON.stringify(exportData, null, 2);
+    
+    // 创建Blob对象
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    
+    // 创建下载链接
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `xhs-prompts-${new Date().toISOString().split('T')[0]}.json`;
+    
+    // 触发下载
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    // 释放URL对象
+    URL.revokeObjectURL(url);
+    
+    showSuccessMessage('提示词导出成功！');
+  });
+}
+
+// 导入提示词
+function importPrompts(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const importData = JSON.parse(e.target.result);
+      
+      // 验证导入数据格式
+      if (!importData.prompts || !Array.isArray(importData.prompts)) {
+        showSuccessMessage('导入文件格式错误，请使用正确的导出文件', false);
+        return;
+      }
+      
+      // 获取现有提示词
+      chrome.storage.local.get('prompts', (data) => {
+        let existingPrompts = data.prompts || [];
+        
+        // 过滤掉名称相同的提示词
+        const existingNames = new Set(existingPrompts.map(p => p.name));
+        const newPrompts = importData.prompts.filter(p => !existingNames.has(p.name));
+        
+        // 合并提示词
+        const updatedPrompts = [...existingPrompts, ...newPrompts];
+        
+        // 保存到存储
+        chrome.storage.local.set({ prompts: updatedPrompts }, () => {
+          showSuccessMessage(`成功导入 ${newPrompts.length} 个提示词，跳过 ${importData.prompts.length - newPrompts.length} 个重复名称的提示词`);
+          loadPrompts();
+          
+          // 重置文件输入
+          event.target.value = '';
+        });
+      });
+    } catch (error) {
+      console.error('导入提示词失败:', error);
+      showSuccessMessage('导入文件解析失败，请检查文件格式', false);
+      
+      // 重置文件输入
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
 }

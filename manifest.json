@@ -27,6 +27,11 @@
       "128": "images/icon128_new.svg"
     }
   },
+  "icons": {
+    "16": "images/icon16_new.svg",
+    "48": "images/icon48_new.svg",
+    "128": "images/icon128_new.svg"
+  },
   "options_page": "options.html",
   "background": {
     "service_worker": "background.js"
