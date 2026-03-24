@@ -263,21 +263,34 @@ function init() {
       const enableDownload = settings.enableDownload !== false; // 默认开启
       
       if (enableDownload) {
-        console.log('小红书页面已识别，开始注入图片下载按钮');
-        injectDownloadButtons();
-        // injectPopupNoteDownloadButtons();
+        console.log('小红书页面已识别，开始添加笔记鼠标事件');
         
-        // 监听页面滚动事件，以处理无限滚动的内容
-        let scrollTimeout;
-        window.addEventListener('scroll', () => {
-          // 防抖处理，避免滚动时频繁触发
-          clearTimeout(scrollTimeout);
-          scrollTimeout = setTimeout(() => {
-            injectDownloadButtons();
-          }, 200); // 200毫秒防抖延迟
+        // 立即为所有笔记添加事件监听器
+        addNoteMouseEvents();
+        
+        // 使用 MutationObserver 监听新笔记的加载
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.addedNodes.length > 0) {
+              // 有新节点添加，检查是否有新笔记
+              const newNotes = document.querySelectorAll('section.note-item:not([data-xhs-download-added])');
+              if (newNotes.length > 0) {
+                console.log(`发现 ${newNotes.length} 个新笔记，添加事件监听器`);
+                addNoteMouseEvents();
+              }
+            }
+          });
         });
+        
+        // 开始观察文档变化
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+        
+        console.log('MutationObserver 已启动，监听新笔记');
       } else {
-        console.log('小红书图片下载功能已关闭，不注入下载按钮');
+        console.log('小红书图片下载功能已关闭，不添加笔记鼠标事件');
       }
     });
   }
@@ -765,37 +778,68 @@ function selectPublishTime(publishTime) {
   console.log('未找到发布时间选项:', publishTime);
 }
 
+// 为笔记添加鼠标进入事件，显示下载按钮
+function addNoteMouseEvents() {
+  // 首先隐藏所有已存在的下载按钮
+  const allDownloadButtons = document.querySelectorAll('.xhs-download-btn');
+  allDownloadButtons.forEach(button => {
+    button.style.display = 'none';
+  });
+  
+  const noteItems = document.querySelectorAll('section.note-item');
+  console.log(`找到 ${noteItems.length} 个 note-item 元素`);
+  
+  noteItems.forEach((noteItem, index) => {
+    // 检查是否已经添加过事件监听
+    if (noteItem.hasAttribute('data-xhs-download-added')) {
+      return;
+    }
+    
+    // 为笔记添加鼠标进入事件
+    noteItem.addEventListener('mouseenter', () => {
+      // 查找笔记中的所有图片
+      const images = noteItem.querySelectorAll('img');
+      
+      images.forEach(img => {
+        // 检查是否已经添加了下载按钮
+        if (!img.parentNode.querySelector('.xhs-download-btn')) {
+          // 只处理有src属性且不是空白图片的图片，并且宽度和高度都大于100
+          if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder')) {
+            console.log(`为图片添加下载按钮: ${img.src}`);
+            addDownloadButton(img);
+          }
+        }
+      });
+      
+      // 显示该笔记中所有下载按钮
+      const buttons = noteItem.querySelectorAll('.xhs-download-btn');
+      buttons.forEach(button => {
+        button.style.display = 'flex';
+      });
+    });
+    
+    // 为笔记添加鼠标移出事件
+    noteItem.addEventListener('mouseleave', () => {
+      // 隐藏所有下载按钮
+      const downloadButtons = noteItem.querySelectorAll('.xhs-download-btn');
+      downloadButtons.forEach(button => {
+        button.style.display = 'none';
+      });
+    });
+    
+    // 标记为已添加事件
+    noteItem.setAttribute('data-xhs-download-added', 'true');
+  });
+  
+  console.log('笔记鼠标事件添加完成');
+}
+
 // 在小红书页面注入图片下载按钮
 function injectDownloadButtons() {
   console.log('开始注入小红书图片下载按钮');
   
-  // 处理发现页的笔记图片
-  const noteItems = document.querySelectorAll('section.note-item');
-  console.log(`找到 ${noteItems.length} 个 note-item 元素`);
-  
-  let addedButtons = 0;
-  
-  noteItems.forEach((item, index) => {
-    console.log(`处理第 ${index + 1} 个 note-item`);
-    
-    // 查找note-item下的所有图片
-    const images = item.querySelectorAll('img');
-    console.log(`在第 ${index + 1} 个 note-item 中找到 ${images.length} 张图片`);
-    
-    images.forEach(img => {
-      // 检查是否已经添加了下载按钮
-      if (!img.parentNode.querySelector('.xhs-download-btn')) {
-        // 只处理有src属性且不是空白图片的图片，并且宽度和高度都大于100
-        if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder') && img.width > 100 && img.height > 100) {
-          console.log(`为图片添加下载按钮: ${img.src} (${img.width}x${img.height})`);
-          addDownloadButton(img);
-          addedButtons++;
-        } else if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder')) {
-          console.log(`图片尺寸过小，跳过添加下载按钮: ${img.src} (${img.width}x${img.height})`);
-        }
-      }
-    });
-  });
+  // 为笔记添加鼠标事件
+  addNoteMouseEvents();
   
   // 处理笔记详情页的图片（基于note-container容器）
   const noteContainer = document.querySelector('#noteContainer.note-container');
@@ -811,7 +855,6 @@ function injectDownloadButtons() {
         if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder') && img.width > 100 && img.height > 100) {
           console.log(`为详情页图片添加下载按钮: ${img.src} (${img.width}x${img.height})`);
           addDownloadButton(img);
-          addedButtons++;
         } else if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder')) {
           console.log(`详情页图片尺寸过小，跳过添加下载按钮: ${img.src} (${img.width}x${img.height})`);
         }
@@ -821,38 +864,7 @@ function injectDownloadButtons() {
     console.log('未找到笔记详情页容器 note-container');
   }
   
-  // 处理其他页面的图片
-  const otherImages = document.querySelectorAll('img');
-  console.log(`找到 ${otherImages.length} 张其他图片`);
-  
-  otherImages.forEach(img => {
-    // 检查是否已经添加了下载按钮
-    if (!img.parentNode.querySelector('.xhs-download-btn')) {
-      // 只处理有src属性且不是空白图片的图片
-      if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder') && img.width > 100 && img.height > 100) {
-          // 避免重复处理已经在note-item或note-container中处理过的图片
-          let isInProcessedContainer = false;
-          let parent = img.parentNode;
-          while (parent) {
-            if (parent.classList && (parent.classList.contains('note-item') || parent.classList.contains('note-container'))) {
-              isInProcessedContainer = true;
-              break;
-            }
-            parent = parent.parentNode;
-          }
-          
-          if (!isInProcessedContainer) {
-            console.log(`为其他图片添加下载按钮: ${img.src} (${img.width}x${img.height})`);
-            addDownloadButton(img);
-            addedButtons++;
-          }
-        } else if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder')) {
-          console.log(`其他图片尺寸过小，跳过添加下载按钮: ${img.src} (${img.width}x${img.height})`);
-        }
-    }
-  });
-  
-  console.log(`小红书图片处理完成：添加了 ${addedButtons} 个下载按钮`);
+  console.log('小红书图片处理完成');
 }
 
 // 为图片添加下载按钮
@@ -872,7 +884,7 @@ function addDownloadButton(img) {
     font-size: 12px;
     cursor: pointer;
     z-index: 1000;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     transition: background 0.3s;
@@ -886,29 +898,58 @@ function addDownloadButton(img) {
   if (getComputedStyle(parent).position === 'static') {
     parent.style.position = 'relative';
   }
-  // console.log('=============图片的父元素:===============', parent);
   
   // 获取笔记链接
   let noteUrl = window.location.href;
   
   // 尝试从图片的父元素中查找a标签获取笔记链接
-  
-  // const aTag = parent.querySelector('a');
-  // console.log('=============图片的父元素中的a标签:===============', aTag);
   if (parent && parent.href) {
-    noteUrl =parent.href;
+    noteUrl = parent.href;
   }
+  
   // 添加点击事件处理
   buttonContainer.addEventListener('click', (e) => {
     console.log('点击了下载按钮', noteUrl);
-    // e.stopPropagation(); // 阻止事件冒泡，避免触发其他点击事件
-    // e.preventDefault(); // 阻止默认行为，避免页面跳转
-    // https://www.xiaohongshu.com/explore/69997158000000000a03d1d6?xsec_token=ABRRIbaOPVu7x1_Vr1RHQpjwXDmbRfs0r-p91C4rDqs34=&xsec_source=pc_feed
-    downloadNoteImages( noteUrl);
+    downloadNoteImages(noteUrl);
   });
   
   // 将按钮添加到图片的父容器中
   parent.parentNode.appendChild(buttonContainer);
+  
+  // 确保按钮一开始就是隐藏的
+  buttonContainer.style.display = 'none';
+  
+  // 找到笔记容器（section.note-item）
+  let noteItem = parent;
+  while (noteItem && !noteItem.classList.contains('note-item')) {
+    noteItem = noteItem.parentNode;
+  }
+  
+  // 如果找到笔记容器，添加鼠标进入和移出事件
+  if (noteItem) {
+    // 确保只添加一次事件监听器
+    if (!noteItem.hasAttribute('data-xhs-mouse-events')) {
+      noteItem.setAttribute('data-xhs-mouse-events', 'true');
+      
+      // 为笔记添加鼠标进入事件
+      noteItem.addEventListener('mouseenter', () => {
+        // 显示该笔记中所有下载按钮
+        const buttons = noteItem.querySelectorAll('.xhs-download-btn');
+        buttons.forEach(button => {
+          button.style.display = 'flex';
+        });
+      });
+      
+      // 为笔记添加鼠标移出事件
+      noteItem.addEventListener('mouseleave', () => {
+        // 隐藏该笔记中所有下载按钮
+        const buttons = noteItem.querySelectorAll('.xhs-download-btn');
+        buttons.forEach(button => {
+          button.style.display = 'none';
+        });
+      });
+    }
+  }
 }
 
 // 处理弹出笔记中的图片，为其添加下载按钮

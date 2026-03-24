@@ -838,16 +838,16 @@ function importPrompts(event) {
           loadPrompts();
           
           // 重置文件输入
-          event.target.value = '';
-        });
-      });
-    } catch (error) {
-      console.error('导入提示词失败:', error);
-      showSuccessMessage('导入文件解析失败，请检查文件格式', false);
-      
-      // 重置文件输入
-      event.target.value = '';
-    }
+      document.getElementById('import-file').value = '';
+    });
+  });
+} catch (error) {
+  console.error('导入提示词失败:', error);
+  showSuccessMessage('导入文件解析失败，请检查文件格式', false);
+  
+  // 重置文件输入
+  document.getElementById('import-file').value = '';
+}
   };
   reader.readAsText(file);
 }
