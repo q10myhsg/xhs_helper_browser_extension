@@ -803,12 +803,6 @@ function selectPublishTime(publishTime) {
 
 // 为笔记添加鼠标进入事件，显示下载按钮
 function addNoteMouseEvents() {
-  // 首先隐藏所有已存在的下载按钮
-  const allDownloadButtons = document.querySelectorAll('.xhs-download-btn');
-  allDownloadButtons.forEach(button => {
-    button.style.display = 'none';
-  });
-  
   const noteItems = document.querySelectorAll('section.note-item');
   console.log(`找到 ${noteItems.length} 个 note-item 元素`);
   
@@ -818,21 +812,23 @@ function addNoteMouseEvents() {
       return;
     }
     
-    // 先给笔记中的所有图片添加下载按钮
-    const images = noteItem.querySelectorAll('img');
-    images.forEach(img => {
-      // 检查是否已经添加了下载按钮
-      if (!img.parentNode.querySelector('.xhs-download-btn')) {
-        // 只处理有src属性且不是空白图片的图片，并且宽度和高度都大于100
-        if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder')) {
-          console.log(`为图片添加下载按钮: ${img.src}`);
-          addDownloadButton(img);
-        }
-      }
-    });
-    
     // 为笔记添加鼠标进入事件
     noteItem.addEventListener('mouseenter', () => {
+      console.log('鼠标进入笔记，开始添加下载按钮');
+      
+      // 给笔记中的所有图片添加下载按钮
+      const images = noteItem.querySelectorAll('img');
+      images.forEach(img => {
+        // 检查是否已经添加了下载按钮
+        if (!img.parentNode.querySelector('.xhs-download-btn')) {
+          // 只处理有src属性且不是空白图片的图片
+          if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder')) {
+            console.log(`为图片添加下载按钮: ${img.src}`);
+            addDownloadButton(img);
+          }
+        }
+      });
+      
       // 显示该笔记中所有下载按钮
       const buttons = noteItem.querySelectorAll('.xhs-download-btn');
       buttons.forEach(button => {
