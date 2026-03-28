@@ -13,9 +13,9 @@ async function init() {
   // 初始化权限数据
   await initPermissions();
   
-  // 获取最新的权限信息
+  // 获取最新的权限信息（强制更新）
   if (typeof getDeviceInfo === 'function') {
-    await getDeviceInfo();
+    await getDeviceInfo(true);
   } else {
     console.log('getDeviceInfo函数未定义，跳过权限获取');
   }
