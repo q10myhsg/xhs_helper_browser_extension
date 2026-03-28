@@ -311,19 +311,21 @@ function checkIfXiaohongshuSearchPage() {
 
 // 关键词拓展功能
 function expandKeywords() {
+  console.log('popup中点击了关键词拓展按钮');
   // 向content script发送关键词拓展请求
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const activeTab = tabs[0];
     if (activeTab) {
-      // 先关闭popup页面
-      window.close();
-      
+      console.log('找到活跃标签页，准备发送消息');
       // 发送消息到content script
       chrome.tabs.sendMessage(activeTab.id, { 
         action: 'expandKeywords'
       }, (response) => {
+        console.log('收到content script响应:', response);
         if (chrome.runtime.lastError) {
-          console.log('无法发送消息到content script:', chrome.runtime.lastError.message);
+          console.error('无法发送消息到content script:', chrome.runtime.lastError);
+          // 即使出错也关闭popup
+          window.close();
           return;
         }
         if (response && response.success) {
@@ -331,8 +333,11 @@ function expandKeywords() {
         } else if (response && response.error) {
           console.error('关键词拓展失败:', response.error);
         }
+        // 关闭popup页面
+        window.close();
       });
     } else {
+      console.error('没有找到活跃标签页');
       // 如果没有找到活跃标签页，也关闭popup页面
       window.close();
     }
