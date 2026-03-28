@@ -48,7 +48,34 @@
       
       alert(`关键词拓展完成！共拓展 ${result.length} 个关键词`);
       
-      // 保存到localStorage供下载
+      // 9. 生成JSON文件内容
+      const keywordData = {
+        originalKeyword: originalKeyword,
+        expandedKeywords: result,
+        timestamp: new Date().toISOString(),
+        count: result.length
+      };
+      
+      // 10. 创建下载链接
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const safeKeyword = originalKeyword.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
+      const fileName = `${safeKeyword}_${timestamp}.json`;
+      const content = JSON.stringify(keywordData, null, 2);
+      
+      // 创建Blob和下载链接
+      const blob = new Blob([content], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      console.log('关键词已下载:', fileName);
+      
+      // 保存到localStorage供后续使用
       localStorage.setItem('xhs_expanded_keywords', JSON.stringify({
         original: originalKeyword,
         expanded: result,
