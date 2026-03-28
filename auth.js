@@ -221,6 +221,16 @@ async function getDeviceInfo(forceUpdate = false) {
       const currentDate = new Date().toISOString().split('T')[0];
       await chrome.storage.sync.set({ lastPermissionUpdateDate: currentDate });
       
+      // 如果有permissions数据，更新到本地存储
+      if (data.data.permissions) {
+        const permissionsData = {
+          auth_status: data.data.is_active ? 'authenticated' : 'unauthenticated',
+          permissions: data.data.permissions
+        };
+        await chrome.storage.sync.set({ permissions: permissionsData });
+        console.log('权限信息已更新:', permissionsData);
+      }
+      
       // 如果认证状态为已认证，更新认证信息
       if (data.data.is_active) {
         // 获取当前认证信息
