@@ -22,15 +22,15 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "images/icon16_new.svg",
-      "48": "images/icon48_new.svg",
-      "128": "images/icon128_new.svg"
+      "16": "images/book_16.png",
+      "48": "images/book_48.png",
+      "128": "images/book_128.png"
     }
   },
   "icons": {
-    "16": "images/icon16_new.svg",
-    "48": "images/icon48_new.svg",
-    "128": "images/icon128_new.svg"
+    "16": "images/book_16.png",
+    "48": "images/book_48.png",
+    "128": "images/book_128.png"
   },
   "options_page": "options.html",
   "background": {
@@ -56,7 +56,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["usageCounter.js", "auth.js"],
+      "resources": ["usageCounter.js", "auth.js", "keyword_expansion_script.js"],
       "matches": ["<all_urls>"]
     }
   ]

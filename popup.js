@@ -327,46 +327,22 @@ function expandKeywords() {
         return;
       }
       
-      // 尝试直接发送消息到content script
-      console.log('尝试直接发送消息到content script...');
-      chrome.tabs.sendMessage(activeTab.id, { 
-        action: 'expandKeywords'
-      }, (response) => {
-        console.log('收到content script响应:', response);
+      // 使用scripting API直接在页面执行关键词拓展
+      console.log('使用scripting API执行关键词拓展...');
+      chrome.scripting.executeScript({
+        target: { tabId: activeTab.id },
+        files: ['keyword_expansion_script.js']
+      }, (results) => {
+        console.log('scripting执行结果:', results);
         if (chrome.runtime.lastError) {
-          console.error('直接发送消息失败:', chrome.runtime.lastError);
-          console.log('尝试通过background发送消息...');
-          
-          // 如果直接发送失败，尝试通过background传递
-          chrome.runtime.sendMessage({
-            action: 'forwardToContent',
-            tabId: activeTab.id,
-            message: { action: 'expandKeywords' }
-          }, (bgResponse) => {
-            console.log('收到background响应:', bgResponse);
-            if (chrome.runtime.lastError) {
-              console.error('通过background发送也失败:', chrome.runtime.lastError);
-              alert('无法与页面通信，请刷新页面后重试');
-            }
-            window.close();
-          });
-          return;
+          console.error('scripting执行失败:', chrome.runtime.lastError);
+          alert('执行失败: ' + chrome.runtime.lastError.message);
         }
-        
-        if (response && response.success) {
-          console.log('关键词拓展成功');
-        } else if (response && response.error) {
-          console.error('关键词拓展失败:', response.error);
-          alert('关键词拓展失败: ' + response.error);
-        }
-        
-        // 关闭popup页面
         window.close();
       });
     } else {
       console.error('没有找到活跃标签页');
       alert('没有找到活跃标签页');
-      // 如果没有找到活跃标签页，也关闭popup页面
       window.close();
     }
   });
