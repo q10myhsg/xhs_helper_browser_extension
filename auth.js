@@ -306,4 +306,11 @@ if (typeof module !== 'undefined' && module.exports) {
     getDeviceInfo,
     initPermissions
   };
+} else {
+  // 在浏览器环境中，将函数暴露到全局对象
+  window.generateMachineCode = generateMachineCode;
+  window.verifyAuthCode = verifyAuthCode;
+  window.checkAuthStatus = checkAuthStatus;
+  window.getDeviceInfo = getDeviceInfo;
+  window.initPermissions = initPermissions;
 }

@@ -1,8 +1,11 @@
 // 初始化权限数据和使用计数
+console.log('content.js 开始加载...');
 (async function() {
   try {
+    console.log('content.js 初始化函数...');
     // 初始化权限数据
     if (typeof initPermissions === 'function') {
+      console.log('调用 initPermissions...');
       await initPermissions();
     } else {
       console.log('initPermissions函数未定义，跳过初始化');
@@ -10,6 +13,7 @@
     
     // 初始化使用计数
     if (typeof initUsageCounter === 'function') {
+      console.log('调用 initUsageCounter...');
       await initUsageCounter();
     } else {
       console.log('initUsageCounter函数未定义，跳过初始化');
@@ -17,10 +21,12 @@
     
     // 获取最新的权限信息（强制更新）
     if (typeof getDeviceInfo === 'function') {
+      console.log('调用 getDeviceInfo...');
       await getDeviceInfo(true);
     } else {
       console.log('getDeviceInfo函数未定义，跳过权限获取');
     }
+    console.log('content.js 初始化完成');
   } catch (error) {
     console.error('初始化时出错:', error);
   }
