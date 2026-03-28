@@ -795,22 +795,21 @@ function addNoteMouseEvents() {
       return;
     }
     
+    // 先给笔记中的所有图片添加下载按钮
+    const images = noteItem.querySelectorAll('img');
+    images.forEach(img => {
+      // 检查是否已经添加了下载按钮
+      if (!img.parentNode.querySelector('.xhs-download-btn')) {
+        // 只处理有src属性且不是空白图片的图片，并且宽度和高度都大于100
+        if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder')) {
+          console.log(`为图片添加下载按钮: ${img.src}`);
+          addDownloadButton(img);
+        }
+      }
+    });
+    
     // 为笔记添加鼠标进入事件
     noteItem.addEventListener('mouseenter', () => {
-      // 查找笔记中的所有图片
-      const images = noteItem.querySelectorAll('img');
-      
-      images.forEach(img => {
-        // 检查是否已经添加了下载按钮
-        if (!img.parentNode.querySelector('.xhs-download-btn')) {
-          // 只处理有src属性且不是空白图片的图片，并且宽度和高度都大于100
-          if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder')) {
-            console.log(`为图片添加下载按钮: ${img.src}`);
-            addDownloadButton(img);
-          }
-        }
-      });
-      
       // 显示该笔记中所有下载按钮
       const buttons = noteItem.querySelectorAll('.xhs-download-btn');
       buttons.forEach(button => {
@@ -918,38 +917,6 @@ function addDownloadButton(img) {
   
   // 确保按钮一开始就是隐藏的
   buttonContainer.style.display = 'none';
-  
-  // 找到笔记容器（section.note-item）
-  let noteItem = parent;
-  while (noteItem && !noteItem.classList.contains('note-item')) {
-    noteItem = noteItem.parentNode;
-  }
-  
-  // 如果找到笔记容器，添加鼠标进入和移出事件
-  if (noteItem) {
-    // 确保只添加一次事件监听器
-    if (!noteItem.hasAttribute('data-xhs-mouse-events')) {
-      noteItem.setAttribute('data-xhs-mouse-events', 'true');
-      
-      // 为笔记添加鼠标进入事件
-      noteItem.addEventListener('mouseenter', () => {
-        // 显示该笔记中所有下载按钮
-        const buttons = noteItem.querySelectorAll('.xhs-download-btn');
-        buttons.forEach(button => {
-          button.style.display = 'flex';
-        });
-      });
-      
-      // 为笔记添加鼠标移出事件
-      noteItem.addEventListener('mouseleave', () => {
-        // 隐藏该笔记中所有下载按钮
-        const buttons = noteItem.querySelectorAll('.xhs-download-btn');
-        buttons.forEach(button => {
-          button.style.display = 'none';
-        });
-      });
-    }
-  }
 }
 
 // 处理弹出笔记中的图片，为其添加下载按钮
