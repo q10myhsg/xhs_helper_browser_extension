@@ -60,7 +60,7 @@ console.log('keyword_expansion_script.js 加载');
             }
             
             resolve(suggestions);
-          }, 500 + Math.random() * 500);
+          }, 800);
         });
       }
       
@@ -106,7 +106,7 @@ console.log('keyword_expansion_script.js 加载');
       console.log('获取原始关键词的下拉提示');
       searchInput.value = originalKeyword;
       triggerInputEvents(searchInput);
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       const originalSuggestions = await getSearchSuggestions(originalKeyword);
       console.log('原始关键词提示:', originalSuggestions);
       originalSuggestions.forEach(suggestion => expandedKeywords.add(suggestion));
@@ -121,6 +121,9 @@ console.log('keyword_expansion_script.js 加载');
         console.log(`测试关键词: ${testKeyword}`);
         searchInput.value = testKeyword;
         triggerInputEvents(searchInput);
+        
+        // 增加等待时间
+        await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 500));
         
         const suggestions = await getSearchSuggestions(testKeyword);
         console.log(`字母 ${letter} 的提示:`, suggestions);
