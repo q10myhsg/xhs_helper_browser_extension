@@ -37,28 +37,70 @@ console.log('keyword_expansion_script.js 加载');
         return new Promise((resolve) => {
           setTimeout(() => {
             const suggestions = [];
+            
+            console.log('========== 开始查找搜索建议元素 ==========');
+            
+            // 打印整个body的HTML，方便调试
+            console.log('页面部分HTML:', document.body.innerHTML.substring(0, 3000));
+            
+            // 尝试多种方式查找
+            const allElements = document.querySelectorAll('*');
+            console.log('页面总元素数:', allElements.length);
+            
+            // 查找包含文本的元素
             const suggestionSelectors = [
               '.suggest-item',
               '.search-suggest-item',
               '[class*="suggest"]',
-              '[class*="hint"]'
+              '[class*="hint"]',
+              '[class*="autocomplete"]',
+              '[class*="dropdown"]',
+              '[role="listbox"] *',
+              '[role="option"]',
+              'li',
+              'div[style*="position"]'
             ];
             
             for (const selector of suggestionSelectors) {
               const elements = document.querySelectorAll(selector);
               if (elements.length > 0) {
-                elements.forEach(el => {
+                console.log(`选择器 "${selector}" 找到 ${elements.length} 个元素`);
+                elements.forEach((el, idx) => {
                   const text = el.textContent?.trim();
-                  if (text && text.length > 0) {
-                    suggestions.push(text);
+                  if (text && text.length > 0 && text.length < 50) {
+                    console.log(`  [${idx}] ${text}`);
+                    if (!suggestions.includes(text)) {
+                      suggestions.push(text);
+                    }
                   }
                 });
-                if (suggestions.length > 0) {
-                  break;
+              }
+            }
+            
+            // 查找搜索框附近的元素
+            if (suggestions.length === 0) {
+              const searchInput = findSearchInput();
+              if (searchInput) {
+                console.log('搜索框附近的元素:');
+                let parent = searchInput.parentNode;
+                for (let i = 0; i < 5 && parent; i++) {
+                  console.log(`  父层级 ${i}:`, parent.tagName, parent.className);
+                  const children = parent.querySelectorAll('*');
+                  children.forEach(child => {
+                    const text = child.textContent?.trim();
+                    if (text && text.length > 0 && text.length < 50) {
+                      console.log(`    - ${text}`);
+                      if (!suggestions.includes(text)) {
+                        suggestions.push(text);
+                      }
+                    }
+                  });
+                  parent = parent.parentNode;
                 }
               }
             }
             
+            console.log('========== 找到的建议:', suggestions, '==========');
             resolve(suggestions);
           }, 800);
         });
