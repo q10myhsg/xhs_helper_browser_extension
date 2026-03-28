@@ -19,10 +19,10 @@ console.log('content.js 开始加载...');
       console.log('initUsageCounter函数未定义，跳过初始化');
     }
     
-    // 获取最新的权限信息（强制更新）
+    // 获取最新的权限信息（不强制更新，优先使用本地存储）
     if (typeof getDeviceInfo === 'function') {
       console.log('调用 getDeviceInfo...');
-      await getDeviceInfo(true);
+      await getDeviceInfo(false);
     } else {
       console.log('getDeviceInfo函数未定义，跳过权限获取');
     }
@@ -821,8 +821,13 @@ function addNoteMouseEvents() {
       images.forEach(img => {
         // 检查是否已经添加了下载按钮
         if (!img.parentNode.querySelector('.xhs-download-btn')) {
-          // 只处理有src属性且不是空白图片的图片
-          if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder')) {
+          // 只处理有src属性、不是空白图片、不是头像、尺寸较大的图片
+          if (img.src && 
+              img.src.trim() !== '' && 
+              !img.src.includes('placeholder') &&
+              !img.src.includes('avatar') &&
+              !img.src.includes('Avatar') &&
+              (img.naturalWidth > 100 || img.width > 100)) {
             console.log(`为图片添加下载按钮: ${img.src}`);
             addDownloadButton(img);
           }
