@@ -237,8 +237,25 @@ async function checkFeatureAvailability(featureType) {
   }
 }
 
-// 监听来自content.js的消息
+// 监听来自popup和content的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('background收到消息:', message);
+  
+  if (message.action === 'forwardToContent') {
+    // 转发消息到指定的content script
+    console.log('转发消息到content script, tabId:', message.tabId);
+    chrome.tabs.sendMessage(message.tabId, message.message, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error('转发消息失败:', chrome.runtime.lastError);
+        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+      } else {
+        console.log('转发消息成功，收到响应:', response);
+        sendResponse(response);
+      }
+    });
+    return true; // 保持消息通道开放
+  }
+  
   if (message.action === 'downloadNoteImages') {
     console.log('收到下载请求=======:', message);
     

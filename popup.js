@@ -312,32 +312,60 @@ function checkIfXiaohongshuSearchPage() {
 // 关键词拓展功能
 function expandKeywords() {
   console.log('popup中点击了关键词拓展按钮');
+  
   // 向content script发送关键词拓展请求
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const activeTab = tabs[0];
     if (activeTab) {
-      console.log('找到活跃标签页，准备发送消息');
-      // 发送消息到content script
+      console.log('找到活跃标签页:', activeTab.id, activeTab.url);
+      
+      // 先检查一下URL是否是小红书
+      if (!activeTab.url || !activeTab.url.includes('xiaohongshu.com')) {
+        console.error('当前页面不是小红书页面');
+        alert('请在小红书页面使用关键词拓展功能');
+        window.close();
+        return;
+      }
+      
+      // 尝试直接发送消息到content script
+      console.log('尝试直接发送消息到content script...');
       chrome.tabs.sendMessage(activeTab.id, { 
         action: 'expandKeywords'
       }, (response) => {
         console.log('收到content script响应:', response);
         if (chrome.runtime.lastError) {
-          console.error('无法发送消息到content script:', chrome.runtime.lastError);
-          // 即使出错也关闭popup
-          window.close();
+          console.error('直接发送消息失败:', chrome.runtime.lastError);
+          console.log('尝试通过background发送消息...');
+          
+          // 如果直接发送失败，尝试通过background传递
+          chrome.runtime.sendMessage({
+            action: 'forwardToContent',
+            tabId: activeTab.id,
+            message: { action: 'expandKeywords' }
+          }, (bgResponse) => {
+            console.log('收到background响应:', bgResponse);
+            if (chrome.runtime.lastError) {
+              console.error('通过background发送也失败:', chrome.runtime.lastError);
+              alert('无法与页面通信，请刷新页面后重试');
+            }
+            window.close();
+          });
           return;
         }
+        
         if (response && response.success) {
           console.log('关键词拓展成功');
         } else if (response && response.error) {
           console.error('关键词拓展失败:', response.error);
+          alert('关键词拓展失败: ' + response.error);
         }
+        
         // 关闭popup页面
         window.close();
       });
     } else {
       console.error('没有找到活跃标签页');
+      alert('没有找到活跃标签页');
       // 如果没有找到活跃标签页，也关闭popup页面
       window.close();
     }
