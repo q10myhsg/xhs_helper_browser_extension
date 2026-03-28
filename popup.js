@@ -327,16 +327,16 @@ function expandKeywords() {
         return;
       }
       
-      // 使用scripting API直接在页面执行关键词拓展
-      console.log('使用scripting API执行关键词拓展...');
-      chrome.scripting.executeScript({
-        target: { tabId: activeTab.id },
-        files: ['keyword_expansion_script.js']
-      }, (results) => {
-        console.log('scripting执行结果:', results);
+      // 直接向content script发送消息
+      console.log('向content script发送expandKeywords消息...');
+      chrome.tabs.sendMessage(activeTab.id, { action: 'expandKeywords' }, (response) => {
+        console.log('收到content script响应:', response);
         if (chrome.runtime.lastError) {
-          console.error('scripting执行失败:', chrome.runtime.lastError);
+          console.error('发送消息失败:', chrome.runtime.lastError);
           alert('执行失败: ' + chrome.runtime.lastError.message);
+        } else if (response && !response.success) {
+          console.error('执行失败:', response.error);
+          alert('执行失败: ' + response.error);
         }
         window.close();
       });
