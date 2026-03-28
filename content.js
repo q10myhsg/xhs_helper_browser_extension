@@ -1059,13 +1059,14 @@ window.addEventListener('scroll', () => {
 
 // 关键词拓展功能
 async function expandKeywords() {
-  console.log('开始执行关键词拓展');
+  console.log('==================== 开始执行关键词拓展 ====================');
   
   // 1. 找到搜索输入框
   const searchInput = findSearchInput();
   if (!searchInput) {
     throw new Error('未找到搜索输入框');
   }
+  console.log('搜索输入框:', searchInput);
   
   // 2. 获取用户输入的关键词
   const originalKeyword = searchInput.value.trim();
@@ -1084,52 +1085,70 @@ async function expandKeywords() {
   const expandedKeywords = new Set();
   
   // 4. 首先获取原始关键词的下拉提示
-  console.log('获取原始关键词的下拉提示');
+  console.log('------------------- 获取原始关键词的下拉提示 -------------------');
   searchInput.value = originalKeyword;
   
-  // 触发输入事件
-  let inputEvent = new Event('input', { bubbles: true });
-  searchInput.dispatchEvent(inputEvent);
+  // 触发多种输入事件
+  triggerInputEvents(searchInput);
   
   // 等待API响应
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise(resolve => setTimeout(resolve, 1500));
   
   // 获取提示
   const originalSuggestions = await getSearchSuggestions(originalKeyword);
+  console.log('原始关键词提示:', originalSuggestions);
   originalSuggestions.forEach(suggestion => expandedKeywords.add(suggestion));
   
   // 5. 遍历字母a-z，在关键词后添加字母并获取提示
-  console.log('开始遍历字母a-z进行关键词拓展');
+  console.log('------------------- 开始遍历字母a-z进行关键词拓展 -------------------');
   for (let i = 97; i <= 122; i++) {
     const letter = String.fromCharCode(i);
-    console.log(`处理字母: ${letter}`);
+    console.log(`========== 处理字母: ${letter} ==========`);
     
     // 6. 在输入框中输入关键词+字母
-    searchInput.value = originalKeyword + letter;
+    const testKeyword = originalKeyword + letter;
+    console.log(`测试关键词: ${testKeyword}`);
+    searchInput.value = testKeyword;
     
-    // 7. 触发输入事件
-    inputEvent = new Event('input', { bubbles: true });
-    searchInput.dispatchEvent(inputEvent);
+    // 7. 触发多种输入事件
+    triggerInputEvents(searchInput);
     
     // 8. 获取提示（getSearchSuggestions函数中已包含随机停顿）
-    const suggestions = await getSearchSuggestions(originalKeyword + letter);
+    const suggestions = await getSearchSuggestions(testKeyword);
+    console.log(`字母 ${letter} 的提示:`, suggestions);
     suggestions.forEach(suggestion => expandedKeywords.add(suggestion));
   }
   
   // 9. 恢复原始关键词
+  console.log('------------------- 恢复原始关键词 -------------------');
   searchInput.value = originalKeyword;
-  inputEvent = new Event('input', { bubbles: true });
-  searchInput.dispatchEvent(inputEvent);
+  triggerInputEvents(searchInput);
   
   // 10. 转换为数组并返回
   const result = Array.from(expandedKeywords);
-  console.log('关键词拓展完成，共拓展:', result.length, '个关键词');
+  console.log('==================== 关键词拓展完成，共拓展:', result.length, '个关键词 ====================');
   console.log('拓展结果:', result);
   
   // 11. 保存关键词到本地存储
   await saveKeywordsToStorage(originalKeyword, result);
   
   return { success: true, expandedKeywords: result };
+}
+
+// 触发多种输入事件，确保现代前端框架能检测到变化
+function triggerInputEvents(element) {
+  const events = [
+    new Event('input', { bubbles: true }),
+    new Event('change', { bubbles: true }),
+    new KeyboardEvent('keydown', { bubbles: true, key: 'a' }),
+    new KeyboardEvent('keyup', { bubbles: true, key: 'a' })
+  ];
+  
+  events.forEach(event => {
+    element.dispatchEvent(event);
+  });
+  
+  console.log('已触发多种输入事件');
 }
 
 // 查找搜索输入框
