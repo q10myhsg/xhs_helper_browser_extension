@@ -291,7 +291,10 @@ function init() {
         // 立即为所有笔记添加事件监听器
         addNoteMouseEvents();
         
-        // 使用 MutationObserver 监听新笔记的加载
+        // 为笔记详情页面添加下载按钮
+        addNoteDetailDownloadButtons();
+        
+        // 使用 MutationObserver 监听新笔记和页面变化
         const observer = new MutationObserver((mutations) => {
           mutations.forEach((mutation) => {
             if (mutation.addedNodes.length > 0) {
@@ -301,6 +304,9 @@ function init() {
                 console.log(`发现 ${newNotes.length} 个新笔记，添加事件监听器`);
                 addNoteMouseEvents();
               }
+              
+              // 检查是否有新的笔记详情页面内容
+              addNoteDetailDownloadButtons();
             }
           });
         });
@@ -311,12 +317,146 @@ function init() {
           subtree: true
         });
         
-        console.log('MutationObserver 已启动，监听新笔记');
+        console.log('MutationObserver 已启动，监听新笔记和页面变化');
       } else {
         console.log('小红书图片下载功能已关闭，不添加笔记鼠标事件');
       }
     });
   }
+}
+
+// 为笔记详情页面添加下载按钮
+function addNoteDetailDownloadButtons() {
+  console.log('开始为笔记详情页面添加下载按钮');
+  
+  // 检查是否是 explore 详情页
+  const isExplorePage = window.location.pathname.includes('/explore/');
+  
+  // 1. 只有在 explore 详情页才在 noteContainer 上添加下载按钮
+  if (isExplorePage) {
+    const noteContainer = document.getElementById('noteContainer');
+    if (noteContainer && !noteContainer.hasAttribute('data-xhs-detail-download-added')) {
+      console.log('找到 noteContainer，在左上角添加下载按钮');
+      
+      // 为 noteContainer 添加相对定位
+      if (getComputedStyle(noteContainer).position === 'static') {
+        noteContainer.style.position = 'relative';
+      }
+      
+      // 创建下载按钮（使用与项目中其他下载按钮一致的样式）
+      const downloadButton = document.createElement('div');
+      downloadButton.className = 'xhs-download-btn';
+      downloadButton.style.cssText = `
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s;
+      `;
+      
+      downloadButton.innerHTML = '↓ 下载';
+      
+      // 添加点击事件处理
+      downloadButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        console.log('点击了笔记详情页下载按钮', window.location.href);
+        downloadNoteImages(window.location.href);
+      });
+      
+      // 将按钮添加到 noteContainer 中
+      noteContainer.appendChild(downloadButton);
+      
+      // 标记为已添加
+      noteContainer.setAttribute('data-xhs-detail-download-added', 'true');
+      console.log('已在 noteContainer 左上角添加下载按钮');
+    }
+  }
+  
+  // 2. 在笔记详情页面的图片上添加下载按钮（使用原来的简单方式）
+  // 查找笔记详情页面的图片容器
+  const imgContainers = document.querySelectorAll('.img-container');
+  
+  imgContainers.forEach((container) => {
+    // 检查是否已经添加过下载按钮
+    if (container.hasAttribute('data-xhs-detail-download-added')) {
+      return;
+    }
+    
+    // 查找容器中的图片
+    const images = container.querySelectorAll('img');
+    console.log(`在 img-container 中找到 ${images.length} 张图片`);
+    
+    images.forEach((img) => {
+      // 检查是否已经添加了下载按钮
+      if (!img.parentNode || !img.parentNode.querySelector('.xhs-download-btn')) {
+        // 只处理有src属性、不是空白图片、尺寸较大的图片
+        if (img.src && 
+            img.src.trim() !== '' && 
+            !img.src.includes('placeholder') &&
+            !img.src.includes('avatar') &&
+            !img.src.includes('Avatar')) {
+          console.log(`为笔记详情页图片添加下载按钮: ${img.src}`);
+          
+          // 创建下载按钮
+          const buttonContainer = document.createElement('div');
+          buttonContainer.className = 'xhs-download-btn';
+          buttonContainer.style.cssText = `
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+          `;
+          
+          // 添加下载图标
+          buttonContainer.innerHTML = '↓ 下载';
+          
+          // 为图片的父容器添加相对定位
+          const parent = img.parentNode;
+          if (parent && getComputedStyle(parent).position === 'static') {
+            parent.style.position = 'relative';
+          }
+          
+          // 添加点击事件处理
+          buttonContainer.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('点击了笔记详情页下载按钮', window.location.href);
+            downloadNoteImages(window.location.href);
+          });
+          
+          // 将按钮添加到图片的父容器中
+          if (parent) {
+            parent.appendChild(buttonContainer);
+          }
+        }
+      }
+    });
+    
+    // 标记为已添加
+    container.setAttribute('data-xhs-detail-download-added', 'true');
+  });
+  
+  console.log('笔记详情页面下载按钮添加完成');
 }
 
 // 执行搜索页面自动化操作
