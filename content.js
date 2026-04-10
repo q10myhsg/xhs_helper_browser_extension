@@ -292,6 +292,9 @@ function insertPromptToChat(prompt) {
 
 // 初始化时检查是否需要显示提示
 function init() {
+  // 清理"大家都在搜"区域的多余下载按钮
+  cleanupExtraDownloadButtons();
+  
   // 检查是否是小红书网站
   if (window.location.hostname === 'www.xiaohongshu.com') {
     // 检查下载设置
@@ -311,10 +314,12 @@ function init() {
           // 延迟再次添加（确保内容加载完成）
           setTimeout(() => {
             addAllDownloadEvents();
+            cleanupExtraDownloadButtons(); // 再次清理
           }, 1000);
           
           setTimeout(() => {
             addAllDownloadEvents();
+            cleanupExtraDownloadButtons(); // 再次清理
           }, 2500);
           
           // 添加 MutationObserver 监听 DOM 变化（监听弹窗打开）
@@ -323,6 +328,32 @@ function init() {
       });
     });
   }
+}
+
+// 清理"大家都在搜"区域的多余下载按钮
+function cleanupExtraDownloadButtons() {
+  // 查找所有下载按钮
+  const allDownloadButtons = document.querySelectorAll('.xhs-download-btn');
+  
+  allDownloadButtons.forEach(button => {
+    let parent = button;
+    for (let i = 0; i < 10 && parent; i++) {
+      if (parent.classList && (
+          parent.classList.contains('query-note-wrapper') ||
+          parent.classList.contains('query-note-item') ||
+          parent.classList.contains('item-wrapper') ||
+          parent.classList.contains('item-cover') ||
+          (parent.getAttribute && parent.getAttribute('class') && 
+           (parent.getAttribute('class').includes('query-note') ||
+            parent.getAttribute('class').includes('item-wrapper')))
+      )) {
+        // 如果在"大家都在搜"区域，移除按钮
+        button.remove();
+        break;
+      }
+      parent = parent.parentNode;
+    }
+  });
 }
 
 // 添加所有下载相关的事件
@@ -356,6 +387,7 @@ function setupMutationObserver() {
       }
       window.mutationTimeout = setTimeout(() => {
         addAllDownloadEvents();
+        cleanupExtraDownloadButtons(); // 清理多余的按钮
       }, 300);
     }
   });
@@ -983,6 +1015,23 @@ function injectDownloadButtons() {
 
 // 为图片添加下载按钮
 function addDownloadButton(img) {
+  // 检查是否在"大家都在搜"区域，跳过这些区域
+  let parent = img;
+  for (let i = 0; i < 10 && parent; i++) {
+    if (parent.classList && (
+        parent.classList.contains('query-note-wrapper') ||
+        parent.classList.contains('query-note-item') ||
+        parent.classList.contains('item-wrapper') ||
+        parent.classList.contains('item-cover') ||
+        (parent.getAttribute && parent.getAttribute('class') && 
+         (parent.getAttribute('class').includes('query-note') ||
+          parent.getAttribute('class').includes('item-wrapper')))
+    )) {
+      return; // 跳过"大家都在搜"区域
+    }
+    parent = parent.parentNode;
+  }
+  
   // 创建下载按钮容器
   const buttonContainer = document.createElement('div');
   buttonContainer.className = 'xhs-download-btn';
@@ -1009,18 +1058,18 @@ function addDownloadButton(img) {
   buttonContainer.innerHTML = '下载';
   
   // 为图片的父容器添加相对定位，确保按钮位置正确
-  const parent = img.parentNode;
+  const imgParent = img.parentNode;
   
-  if (getComputedStyle(parent).position === 'static') {
-    parent.style.position = 'relative';
+  if (getComputedStyle(imgParent).position === 'static') {
+    imgParent.style.position = 'relative';
   }
   
   // 获取笔记链接
   let noteUrl = window.location.href;
   
   // 尝试从图片的父元素中查找a标签获取笔记链接
-  if (parent && parent.href) {
-    noteUrl = parent.href;
+  if (imgParent && imgParent.href) {
+    noteUrl = imgParent.href;
   }
   
   // 添加点击事件处理
@@ -1031,7 +1080,7 @@ function addDownloadButton(img) {
   });
   
   // 将按钮添加到图片的父容器中
-  parent.appendChild(buttonContainer);
+  imgParent.appendChild(buttonContainer);
 }
 
 // 处理弹出笔记中的图片，为其添加下载按钮
@@ -1131,6 +1180,7 @@ window.addEventListener('scroll', () => {
       
       // 2. 处理下载按钮（为新出现的笔记添加事件）
       addAllDownloadEvents();
+      cleanupExtraDownloadButtons(); // 清理多余的按钮
     }
   }, 300); // 300毫秒防抖延迟
 });
