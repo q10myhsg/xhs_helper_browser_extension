@@ -7,6 +7,16 @@ function isExtensionContextValid() {
   }
 }
 
+// 监听存储变化，更新缓存
+safeChromeCall(() => {
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'sync' && changes.downloadSettings) {
+      window.cachedSettings = changes.downloadSettings.newValue || {};
+      console.log('设置已更新，缓存已刷新:', window.cachedSettings);
+    }
+  });
+});
+
 // 安全的 Chrome API 调用包装器
 function safeChromeCall(callback) {
   if (!isExtensionContextValid()) {
@@ -92,6 +102,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     sortBy: 'most-liked',
                     publishTime: 'week'
                   };
+                  window.cachedSettings = settings; // 更新缓存
                   console.log('加载到的设置:', settings);
                   await executeSearchAutomation(settings);
                   sendResponse({ success: true });
@@ -99,6 +110,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               });
             } else {
               // 使用消息中的设置
+              window.cachedSettings = settings; // 更新缓存
               console.log('使用消息中的设置:', settings);
               executeSearchAutomation(settings).then(() => {
                 sendResponse({ success: true });
@@ -125,12 +137,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sortBy: 'most-liked',
             publishTime: 'week'
           };
+          window.cachedSettings = settings; // 更新缓存
           console.log('加载到的设置:', settings);
           await executeSearchAutomation(settings);
           sendResponse({ success: true });
         });
       } else {
         // 使用消息中的设置
+        window.cachedSettings = settings; // 更新缓存
         console.log('使用消息中的设置:', settings);
         executeSearchAutomation(settings).then(() => {
           sendResponse({ success: true });
@@ -293,7 +307,7 @@ function insertPromptToChat(prompt) {
 // 初始化时检查是否需要显示提示
 function init() {
   // 清理"大家都在搜"区域的多余下载按钮
-  cleanupExtraDownloadButtons();
+  // cleanupExtraDownloadButtons();
   
   // 检查是否是小红书网站
   if (window.location.hostname === 'www.xiaohongshu.com') {
@@ -500,14 +514,14 @@ async function executeSearchAutomation(settings) {
   
   // 8. 鼠标移到页面左下角，移除筛选区
   console.log('鼠标移到页面左下角，移除筛选区');
-  // moveMouseToBottomLeft();
+  moveMouseToBottomLeft();
   
-  // 9. 等待筛选区移除
-  await new Promise(resolve => {
-    setTimeout(() => {
-      resolve();
-    }, 1000);
-  });
+  // // 9. 等待筛选区移除
+  // await new Promise(resolve => {
+  //   setTimeout(() => {
+  //     resolve();
+  //   }, 1000);
+  // });
   
   // 10. 筛选点赞量大于设置阈值的笔记
   const enableLikeFilter = settings.enableLikeFilter === true; // 默认不开启
@@ -1399,20 +1413,29 @@ window.addEventListener('scroll', () => {
       // 1. 处理点赞数筛选（仅在搜索页面）
       if (window.location.pathname.replace(/\/$/, '') === '/search_result' && 
           window.location.search.includes('keyword=')) {
-        safeChromeCall(() => {
-          chrome.storage.sync.get('downloadSettings', (data) => {
-            if (chrome.runtime.lastError) {
-              return;
-            }
-            
-            const settings = data.downloadSettings || {};
-            const enableLikeFilter = settings.enableLikeFilter === true; // 默认不开启
-            if (enableLikeFilter) {
-              const likeThreshold = settings.likeThreshold || 30;
-              filterByLikeCount(likeThreshold);
-            }
+        // 每次滚动时都从 storage 读取可能性能较差，我们可以缓存设置
+        if (!window.cachedSettings) {
+          window.cachedSettings = {};
+          safeChromeCall(() => {
+            chrome.storage.sync.get('downloadSettings', (data) => {
+              if (!chrome.runtime.lastError) {
+                window.cachedSettings = data.downloadSettings || {};
+                applyLikeFilter();
+              }
+            });
           });
-        });
+        } else {
+          applyLikeFilter();
+        }
+        
+        function applyLikeFilter() {
+          const settings = window.cachedSettings || {};
+          const enableLikeFilter = settings.enableLikeFilter === true;
+          if (enableLikeFilter) {
+            const likeThreshold = settings.likeThreshold || 30;
+            filterByLikeCount(likeThreshold);
+          }
+        }
       }
       
       // 2. 处理下载按钮（为新出现的笔记添加事件）
