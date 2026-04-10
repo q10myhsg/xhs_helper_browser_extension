@@ -1187,33 +1187,49 @@ function addPopupImageMouseEvents() {
 // 关键词拓展功能
 async function expandKeywords() {
   try {
-    // 1. 找到搜索输入框
+    // 1. 找到搜索输入框（必须找到，后面需要操作它）
     const searchInput = findSearchInput();
     if (!searchInput) {
       throw new Error('未找到搜索输入框');
     }
     
-    // 2. 获取用户输入的关键词
-    const originalKeyword = searchInput.value.trim();
+    // 2. 直接从搜索框中获取关键词
+    let originalKeyword = searchInput.value.trim();
+    
+    // 如果没有，尝试获取 innerText
+    if (!originalKeyword && searchInput.innerText) {
+      originalKeyword = searchInput.innerText.trim();
+    }
+    
+    // 3. 如果还是没有，让用户输入
+    if (!originalKeyword) {
+      originalKeyword = prompt('请输入要拓展的关键词：');
+      if (!originalKeyword || originalKeyword.trim() === '') {
+        throw new Error('请输入关键词');
+      }
+      originalKeyword = originalKeyword.trim();
+    }
+    
+    // 4. 确保有关键词
     if (!originalKeyword) {
       throw new Error('请先在搜索框中输入关键词');
     }
     
-    // 3. 触发搜索输入框的点击事件
+    // 6. 触发搜索输入框的点击事件
     searchInput.click();
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // 4. 收集拓展的关键词
+    // 7. 收集拓展的关键词
     const expandedKeywords = new Set();
     
-    // 5. 首先获取原始关键词的下拉提示
+    // 8. 首先获取原始关键词的下拉提示
     searchInput.value = originalKeyword;
     triggerInputEvents(searchInput);
     await new Promise(resolve => setTimeout(resolve, 2000));
     const originalSuggestions = await getSearchSuggestions(originalKeyword);
     originalSuggestions.forEach(suggestion => expandedKeywords.add(suggestion));
     
-    // 6. 遍历字母a-z，在关键词后添加字母并获取提示
+    // 9. 遍历字母a-z，在关键词后添加字母并获取提示
     for (let i = 97; i <= 122; i++) {
       const letter = String.fromCharCode(i);
       const testKeyword = originalKeyword + letter;
@@ -1223,16 +1239,16 @@ async function expandKeywords() {
       suggestions.forEach(suggestion => expandedKeywords.add(suggestion));
     }
     
-    // 7. 恢复原始关键词
+    // 10. 恢复原始关键词
     searchInput.value = originalKeyword;
     triggerInputEvents(searchInput);
     
-    // 8. 转换为数组
+    // 11. 转换为数组
     const result = Array.from(expandedKeywords);
     
     alert(`关键词拓展完成！共拓展 ${result.length} 个关键词`);
     
-    // 9. 保存关键词到本地存储并下载
+    // 12. 保存关键词到本地存储并下载
     await saveKeywordsToStorage(originalKeyword, result);
     
     return { success: true, expandedKeywords: result };
@@ -1259,17 +1275,21 @@ function triggerInputEvents(element) {
 
 // 查找搜索输入框
 function findSearchInput() {
-  const selectors = [
-    'input[type="search"]',
-    'input[placeholder*="搜索"]',
-    'input[class*="search"]',
+  // 首先尝试小红书特定的搜索框选择器（根据你提供的HTML）
+  const xhsSelectors = [
     '#search-input',
-    '.search-input',
-    '[class*="search"] input',
-    '[id*="search"] input'
+    'input.search-input',
+    'input[placeholder*="搜索小红书"]',
+    'input[placeholder*="搜索"]',
+    'div.input-box input',
+    'div[class*="search"] input',
+    'input[type="search"]',
+    'div.search-wrapper input',
+    'div.search-bar input',
+    '.el-input__inner',
+    'input[class*="search"]'
   ];
-  
-  for (const selector of selectors) {
+  for (const selector of xhsSelectors) {
     const input = document.querySelector(selector);
     if (input) {
       return input;
