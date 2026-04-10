@@ -193,7 +193,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// 文心一言插入提示词
+// 文心一言插入提示词 
 function insertToWenxin(prompt) {
   const inputElement = document.querySelector('#chat-input-element');
   console.log('文心一言输入框:', inputElement);
@@ -469,7 +469,7 @@ async function executeSearchAutomation(settings) {
   await new Promise(resolve => {
     setTimeout(() => {
       resolve();
-    }, 500);
+    }, 1000);
   });
   
   // 3. 鼠标进入筛选按钮
@@ -478,35 +478,35 @@ async function executeSearchAutomation(settings) {
   
   // 4. 选择排序依据
   console.log('尝试选择排序依据:', settings.sortBy);
-  selectSortBy(settings.sortBy || 'most-liked');
+  await selectSortBy(settings.sortBy || 'most-liked');
   
   // 5. 等待排序选择后页面响应
   await new Promise(resolve => {
     setTimeout(() => {
       resolve();
-    }, 500);
+    }, 1000);
   });
   
   // 6. 选择发布时间
   console.log('尝试选择发布时间:', settings.publishTime);
-  selectPublishTime(settings.publishTime || 'week');
+  await selectPublishTime(settings.publishTime || 'week');
   
   // 7. 等待发布时间选择后页面响应
   await new Promise(resolve => {
     setTimeout(() => {
       resolve();
-    }, 500);
+    }, 1000);
   });
   
   // 8. 鼠标移到页面左下角，移除筛选区
   console.log('鼠标移到页面左下角，移除筛选区');
-  moveMouseToBottomLeft();
+  // moveMouseToBottomLeft();
   
   // 9. 等待筛选区移除
   await new Promise(resolve => {
     setTimeout(() => {
       resolve();
-    }, 500);
+    }, 1000);
   });
   
   // 10. 筛选点赞量大于设置阈值的笔记
@@ -674,24 +674,80 @@ function clickImageTextButton() {
   for (const selector of selectors) {
     const elements = document.querySelectorAll(selector);
     console.log(`查找 ${selector}，找到 ${elements.length} 个元素`);
+    
+    // 收集所有匹配的元素
+    const matchedElements = [];
     for (const element of elements) {
       if (element.textContent && element.textContent.includes('图文')) {
-        console.log('找到图文按钮:', element);
-        element.click();
-        return;
+        matchedElements.push(element);
       }
+    }
+    
+    // 先过滤掉有扩展属性的元素
+    const filteredElements = [];
+    for (const element of matchedElements) {
+      const hasExtensionProps = 
+        element.getAttribute('aria-hidden') === 'true' ||
+        (element.style && element.style.zIndex === '-1') ||
+        element.getAttribute('button-hp-installed') ||
+        element.getAttribute('data-hp-kind') ||
+        (element.className && element.className.includes('hp-')) ||
+        (element.id && element.id.includes('hp-'));
+      
+      if (!hasExtensionProps) {
+        filteredElements.push(element);
+      }
+    }
+    
+    console.log(`匹配到 ${matchedElements.length} 个元素，过滤后剩余 ${filteredElements.length} 个`);
+    
+    // 优先使用过滤后的元素，如果没有则使用第一个匹配的
+    const targetElement = filteredElements.length > 0 ? filteredElements[0] : (matchedElements.length > 0 ? matchedElements[0] : null);
+    
+    if (targetElement) {
+      console.log('找到图文按钮:', targetElement);
+      targetElement.click();
+      return;
     }
   }
   
   // 尝试通过文本内容查找
   const allElements = document.querySelectorAll('button, a, div, span');
   console.log(`通过文本内容查找，检查 ${allElements.length} 个元素`);
+  
+  // 收集所有匹配的元素
+  const matchedElements = [];
   for (const element of allElements) {
     if (element.textContent && element.textContent.includes('图文')) {
-      console.log('找到图文按钮:', element);
-      element.click();
-      return;
+      matchedElements.push(element);
     }
+  }
+  
+  // 先过滤掉有扩展属性的元素
+  const filteredElements = [];
+  for (const element of matchedElements) {
+    const hasExtensionProps = 
+      element.getAttribute('aria-hidden') === 'true' ||
+      (element.style && element.style.zIndex === '-1') ||
+      element.getAttribute('button-hp-installed') ||
+      element.getAttribute('data-hp-kind') ||
+      (element.className && element.className.includes('hp-')) ||
+      (element.id && element.id.includes('hp-'));
+    
+    if (!hasExtensionProps) {
+      filteredElements.push(element);
+    }
+  }
+  
+  console.log(`匹配到 ${matchedElements.length} 个元素，过滤后剩余 ${filteredElements.length} 个`);
+  
+  // 优先使用过滤后的元素，如果没有则使用第一个匹配的
+  const targetElement = filteredElements.length > 0 ? filteredElements[0] : (matchedElements.length > 0 ? matchedElements[0] : null);
+  
+  if (targetElement) {
+    console.log('找到图文按钮:', targetElement);
+    targetElement.click();
+    return;
   }
   
   console.log('未找到图文按钮');
@@ -770,8 +826,33 @@ function mouseenterFilterButton() {
   return Promise.resolve();
 }
 
+// 确保筛选面板是打开的
+async function ensureFilterPanelOpen() {
+  // 检查筛选面板是否已经打开
+  const filterPanel = document.querySelector('.filter-panel, [class*="filter-panel"], [class*="filter-dropdown"]');
+  
+  if (filterPanel) {
+    console.log('筛选面板已经打开');
+    return;
+  }
+  
+  console.log('筛选面板未打开，尝试打开...');
+  await mouseenterFilterButton();
+  
+  // 等待一下，让面板显示出来
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // 再次检查
+  const filterPanel2 = document.querySelector('.filter-panel, [class*="filter-panel"], [class*="filter-dropdown"]');
+  if (filterPanel2) {
+    console.log('筛选面板已打开');
+  } else {
+    console.log('筛选面板仍然未打开，继续...');
+  }
+}
+
 // 选择排序依据
-function selectSortBy(sortBy) {
+async function selectSortBy(sortBy) {
   console.log('开始查找排序依据选项:', sortBy);
   // 尝试多种可能的排序选项选择器
   const sortMap = {
@@ -783,6 +864,12 @@ function selectSortBy(sortBy) {
   
   const keywords = sortMap[sortBy] || sortMap['most-liked'];
   console.log('使用关键词:', keywords);
+  
+  // 确保筛选面板是打开的
+  await ensureFilterPanelOpen();
+  
+  // 等待一下，让面板内容加载
+  await new Promise(resolve => setTimeout(resolve, 500));
   
   // 尝试多种可能的选择器，优先使用小红书特定的选择器
   const selectors = [
@@ -804,35 +891,93 @@ function selectSortBy(sortBy) {
   for (const selector of selectors) {
     const elements = document.querySelectorAll(selector);
     console.log(`查找 ${selector}，找到 ${elements.length} 个元素`);
+    
+    // 收集所有匹配的元素
+    const matchedElements = [];
     for (const element of elements) {
       for (const keyword of keywords) {
         if (element.textContent && element.textContent.includes(keyword)) {
-          console.log('找到排序选项:', element);
-          element.click();
-          return;
+          matchedElements.push(element);
+          break;
         }
       }
+    }
+    
+    // 先过滤掉有扩展属性的元素
+    const filteredElements = [];
+    for (const element of matchedElements) {
+      const hasExtensionProps = 
+        element.getAttribute('aria-hidden') === 'true' ||
+        (element.style && element.style.zIndex === '-1') ||
+        element.getAttribute('button-hp-installed') ||
+        element.getAttribute('data-hp-kind') ||
+        (element.className && element.className.includes('hp-')) ||
+        (element.id && element.id.includes('hp-'));
+      
+      if (!hasExtensionProps) {
+        filteredElements.push(element);
+      }
+    }
+    
+    console.log(`匹配到 ${matchedElements.length} 个元素，过滤后剩余 ${filteredElements.length} 个`);
+    
+    // 优先使用过滤后的元素，如果没有则使用第一个匹配的
+    const targetElement = filteredElements.length > 0 ? filteredElements[0] : (matchedElements.length > 0 ? matchedElements[0] : null);
+    
+    if (targetElement) {
+      console.log('找到排序选项:', targetElement);
+      targetElement.click();
+      return;
     }
   }
   
   // 尝试通过文本内容查找
   const allElements = document.querySelectorAll('button, a, div, span');
   console.log(`通过文本内容查找，检查 ${allElements.length} 个元素`);
+  
+  // 收集所有匹配的元素
+  const matchedElements = [];
   for (const element of allElements) {
     for (const keyword of keywords) {
       if (element.textContent && element.textContent.includes(keyword)) {
-        console.log('找到排序选项:', element);
-        element.click();
-        return;
+        matchedElements.push(element);
+        break;
       }
     }
+  }
+  
+  // 先过滤掉有扩展属性的元素
+  const filteredElements = [];
+  for (const element of matchedElements) {
+    const hasExtensionProps = 
+      element.getAttribute('aria-hidden') === 'true' ||
+      (element.style && element.style.zIndex === '-1') ||
+      element.getAttribute('button-hp-installed') ||
+      element.getAttribute('data-hp-kind') ||
+      (element.className && element.className.includes('hp-')) ||
+      (element.id && element.id.includes('hp-'));
+    
+    if (!hasExtensionProps) {
+      filteredElements.push(element);
+    }
+  }
+  
+  console.log(`匹配到 ${matchedElements.length} 个元素，过滤后剩余 ${filteredElements.length} 个`);
+  
+  // 优先使用过滤后的元素，如果没有则使用第一个匹配的
+  const targetElement = filteredElements.length > 0 ? filteredElements[0] : (matchedElements.length > 0 ? matchedElements[0] : null);
+  
+  if (targetElement) {
+    console.log('找到排序选项:', targetElement);
+    targetElement.click();
+    return;
   }
   
   console.log('未找到排序选项:', sortBy);
 }
 
 // 选择发布时间
-function selectPublishTime(publishTime) {
+async function selectPublishTime(publishTime) {
   console.log('开始查找发布时间选项:', publishTime);
   // 尝试多种可能的发布时间选项选择器
   const timeMap = {
@@ -846,6 +991,12 @@ function selectPublishTime(publishTime) {
   
   const keywords = timeMap[publishTime] || timeMap['week'];
   console.log('使用关键词:', keywords);
+  
+  // 确保筛选面板是打开的
+  await ensureFilterPanelOpen();
+  
+  // 等待一下，让面板内容加载
+  await new Promise(resolve => setTimeout(resolve, 500));
   
   // 尝试多种可能的选择器，优先使用小红书特定的选择器
   const selectors = [
@@ -877,35 +1028,92 @@ function selectPublishTime(publishTime) {
           if (tagContainer) {
             const timeOptions = tagContainer.querySelectorAll('.tags');
             console.log(`找到发布时间标签容器，包含 ${timeOptions.length} 个选项`);
+            
+            // 收集所有匹配的元素
+            const matchedElements = [];
             for (const option of timeOptions) {
               for (const keyword of keywords) {
                 if (option.textContent && option.textContent.includes(keyword)) {
-                  console.log('找到发布时间选项:', option);
-                  option.click();
-                  // 停止2秒后再点击一次
-                  setTimeout(() => {
-                    console.log('再次点击发布时间选项:', option);
-                    option.click();
-                  }, 2000);
-                  return;
+                  matchedElements.push(option);
+                  break;
                 }
               }
+            }
+            
+            // 先过滤掉有扩展属性的元素
+            const filteredElements = [];
+            for (const element of matchedElements) {
+              const hasExtensionProps = 
+                element.getAttribute('aria-hidden') === 'true' ||
+                (element.style && element.style.zIndex === '-1') ||
+                element.getAttribute('button-hp-installed') ||
+                element.getAttribute('data-hp-kind') ||
+                (element.className && element.className.includes('hp-')) ||
+                (element.id && element.id.includes('hp-'));
+              
+              if (!hasExtensionProps) {
+                filteredElements.push(element);
+              }
+            }
+            
+            console.log(`匹配到 ${matchedElements.length} 个元素，过滤后剩余 ${filteredElements.length} 个`);
+            
+            // 优先使用过滤后的元素，如果没有则使用第一个匹配的
+            const targetElement = filteredElements.length > 0 ? filteredElements[0] : (matchedElements.length > 0 ? matchedElements[0] : null);
+            
+            if (targetElement) {
+              console.log('找到发布时间选项:', targetElement);
+              targetElement.click();
+              // 停止2秒后再点击一次
+              setTimeout(() => {
+                console.log('再次点击发布时间选项:', targetElement);
+                targetElement.click();
+              }, 2000);
+              return;
             }
           }
         } else {
           // 直接检查元素是否是时间选项
+          // 收集所有匹配的元素
+          const matchedElements = [];
           for (const keyword of keywords) {
-                if (elementText.includes(keyword)) {
-                  console.log('找到发布时间选项:', element);
-                  element.click();
-                  // 停止2秒后再点击一次
-                  setTimeout(() => {
-                    console.log('再次点击发布时间选项:', element);
-                    element.click();
-                  }, 2000);
-                  return;
-                }
-              }
+            if (elementText.includes(keyword)) {
+              matchedElements.push(element);
+              break;
+            }
+          }
+          
+          // 先过滤掉有扩展属性的元素
+          const filteredElements = [];
+          for (const element of matchedElements) {
+            const hasExtensionProps = 
+              element.getAttribute('aria-hidden') === 'true' ||
+              (element.style && element.style.zIndex === '-1') ||
+              element.getAttribute('button-hp-installed') ||
+              element.getAttribute('data-hp-kind') ||
+              (element.className && element.className.includes('hp-')) ||
+              (element.id && element.id.includes('hp-'));
+            
+            if (!hasExtensionProps) {
+              filteredElements.push(element);
+            }
+          }
+          
+          console.log(`匹配到 ${matchedElements.length} 个元素，过滤后剩余 ${filteredElements.length} 个`);
+          
+          // 优先使用过滤后的元素，如果没有则使用第一个匹配的
+          const targetElement = filteredElements.length > 0 ? filteredElements[0] : (matchedElements.length > 0 ? matchedElements[0] : null);
+          
+          if (targetElement) {
+            console.log('找到发布时间选项:', targetElement);
+            targetElement.click();
+            // 停止2秒后再点击一次
+            setTimeout(() => {
+              console.log('再次点击发布时间选项:', targetElement);
+              targetElement.click();
+            }, 2000);
+            return;
+          }
         }
       }
     }
@@ -914,19 +1122,48 @@ function selectPublishTime(publishTime) {
   // 尝试通过文本内容查找
   const allElements = document.querySelectorAll('button, a, div, span');
   console.log(`通过文本内容查找，检查 ${allElements.length} 个元素`);
+  
+  // 收集所有匹配的元素
+  const matchedElements = [];
   for (const element of allElements) {
     for (const keyword of keywords) {
       if (element.textContent && element.textContent.includes(keyword)) {
-        console.log('找到发布时间选项:', element);
-        element.click();
-        // 停止2秒后再点击一次
-        setTimeout(() => {
-          console.log('再次点击发布时间选项:', element);
-          element.click();
-        }, 2000);
-        return;
+        matchedElements.push(element);
+        break;
       }
     }
+  }
+  
+  // 先过滤掉有扩展属性的元素
+  const filteredElements = [];
+  for (const element of matchedElements) {
+    const hasExtensionProps = 
+      element.getAttribute('aria-hidden') === 'true' ||
+      (element.style && element.style.zIndex === '-1') ||
+      element.getAttribute('button-hp-installed') ||
+      element.getAttribute('data-hp-kind') ||
+      (element.className && element.className.includes('hp-')) ||
+      (element.id && element.id.includes('hp-'));
+    
+    if (!hasExtensionProps) {
+      filteredElements.push(element);
+    }
+  }
+  
+  console.log(`匹配到 ${matchedElements.length} 个元素，过滤后剩余 ${filteredElements.length} 个`);
+  
+  // 优先使用过滤后的元素，如果没有则使用第一个匹配的
+  const targetElement = filteredElements.length > 0 ? filteredElements[0] : (matchedElements.length > 0 ? matchedElements[0] : null);
+  
+  if (targetElement) {
+    console.log('找到发布时间选项:', targetElement);
+    targetElement.click();
+    // 停止2秒后再点击一次
+    setTimeout(() => {
+      console.log('再次点击发布时间选项:', targetElement);
+      targetElement.click();
+    }, 2000);
+    return;
   }
   
   console.log('未找到发布时间选项:', publishTime);
