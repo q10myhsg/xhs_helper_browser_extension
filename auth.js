@@ -1,7 +1,7 @@
 // 认证相关功能
 
 // API基础URL
-const API_BASE_URL = 'https://1259223433-0gnwuwcg9e.ap-beijing.tencentscf.com';
+const API_BASE_URL = 'https://1259223433-ip1qx1uc34.ap-beijing.tencentscf.com';
 // API Key（实际使用时需要替换为真实的API Key）
 const API_KEY = 'wenyang666';
 
@@ -267,23 +267,23 @@ async function initPermissions() {
     // 检查是否已有权限数据
     const result = await chrome.storage.sync.get('permissions');
     if (!result.permissions) {
-      // 设置默认权限值
+      // 设置默认权限值（免费版）
       const defaultPermissions = {
         auth_status: 'unauthenticated',
         permissions: {
           prompt_word: {
-            daily_limit: 30,
+            daily_limit: 10,
             enable_like_filter: true
           },
           download: {
-            daily_limit: 30
+            daily_limit: 10
           },
           search: {
             high_value_notes: {
-              daily_limit: 30
+              daily_limit: 10
             },
             keyword_expansion: {
-              daily_limit: 5
+              daily_limit: 2
             }
           }
         }

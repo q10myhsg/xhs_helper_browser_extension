@@ -633,7 +633,7 @@ function loadDownloadSettings() {
     // 设置启用点赞数过滤开关
     const enableLikeFilter = document.getElementById('enable-like-filter');
     if (enableLikeFilter) {
-      enableLikeFilter.checked = settings.enableLikeFilter === true; // 默认关闭
+      enableLikeFilter.checked = settings.enableLikeFilter !== false; // 默认开启
     }
     
     // 设置点赞数阈值
@@ -721,29 +721,29 @@ async function loadUsageInfo() {
     const deviceInfoResult = await chrome.storage.sync.get('deviceInfo');
     const deviceInfo = deviceInfoResult.deviceInfo;
     
-    // 初始化权限限制值
-    let promptWordLimit = 30;
-    let highValueLimit = 30;
-    let keywordLimit = 5;
-    let downloadLimit = 30;
+    // 初始化权限限制值（免费版默认值）
+    let promptWordLimit = 10;
+    let highValueLimit = 10;
+    let keywordLimit = 2;
+    let downloadLimit = 10;
     
     // 如果设备信息中有权限数据，使用它
     if (deviceInfo && deviceInfo.status === 'success' && deviceInfo.data.permissions) {
       const permissions = deviceInfo.data.permissions;
-      promptWordLimit = permissions.prompt_word?.daily_limit || 30;
-      highValueLimit = permissions.search?.high_value_notes?.daily_limit || 30;
-      keywordLimit = permissions.search?.keyword_expansion?.daily_limit || 5;
-      downloadLimit = permissions.download?.daily_limit || 30;
+      promptWordLimit = permissions.prompt_word?.daily_limit || 10;
+      highValueLimit = permissions.search?.high_value_notes?.daily_limit || 10;
+      keywordLimit = permissions.search?.keyword_expansion?.daily_limit || 2;
+      downloadLimit = permissions.download?.daily_limit || 10;
     } else {
       // 否则使用本地存储的权限数据
       const permissionsResult = await chrome.storage.sync.get('permissions');
       const permissions = permissionsResult.permissions;
       
       if (permissions && permissions.permissions) {
-        promptWordLimit = permissions.permissions.prompt_word?.daily_limit || 30;
-        highValueLimit = permissions.permissions.search?.high_value_notes?.daily_limit || 30;
-        keywordLimit = permissions.permissions.search?.keyword_expansion?.daily_limit || 5;
-        downloadLimit = permissions.permissions.download?.daily_limit || 30;
+        promptWordLimit = permissions.permissions.prompt_word?.daily_limit || 10;
+        highValueLimit = permissions.permissions.search?.high_value_notes?.daily_limit || 10;
+        keywordLimit = permissions.permissions.search?.keyword_expansion?.daily_limit || 2;
+        downloadLimit = permissions.permissions.download?.daily_limit || 10;
       }
     }
     
