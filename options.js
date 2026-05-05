@@ -633,7 +633,7 @@ function loadDownloadSettings() {
     // 设置启用点赞数过滤开关
     const enableLikeFilter = document.getElementById('enable-like-filter');
     if (enableLikeFilter) {
-      enableLikeFilter.checked = settings.enableLikeFilter !== false; // 默认开启
+      enableLikeFilter.checked = settings.enableLikeFilter === true; // 默认关闭
     }
     
     // 设置点赞数阈值
