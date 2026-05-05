@@ -1,0 +1,35 @@
+name: Build and Publish Extension
+
+on:
+  push:
+    branches: [ dabao_test ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: xhs_helper_browser_extension
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: xhs_helper_browser_extension/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run final secure build
+        run: node final_secure.js
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xhs_helper_distribution
+          path: xhs_helper_browser_extension/dist/
+          retention-days: 30

@@ -9,34 +9,40 @@ npm install
 
 ## 快速开始
 
-### 推荐：简单分发（功能完全保留）
+### 🎯 100% 安全：推荐使用 final_secure.js
 
-在 main 分支下直接运行：
+在任意分支下运行（推荐 dabao_test）：
+```bash
+node final_secure.js
+```
+
+特点：
+- ✅ 功能 **100% 完全保留**
+- ✅ 只复制原始文件到 ZIP 包，完全不做任何修改
+- ✅ Service Worker、Content Script、DOM 等完美兼容
+- ✅ **强烈推荐用于生产分发！**
+
+输出：`dist/xhs-helper-final-vX.X.X.zip`
+
+---
+
+### 简单分发（备用方案）
+
 ```bash
 node simple_distribute.js
 ```
 
-特点：
-- ✅ 功能 **完全正常**
-- ✅ 只做简单压缩，去掉注释和多余空格
-- ✅ `insertToDoubao`、`chrome.runtime` 等关键 API 完美保留
-- ✅ 推荐用于生产分发！
-
-输出：`dist/xhs-helper-dist-vX.X.X.zip`
-
 ---
 
-### 高级：带混淆分发（可选）
+### 自动打包：GitHub Actions 方式
 
-如果需要更强的代码保护：
-```bash
-node distribute_build.js
-```
+如果在 `dabao_test` 分支，每次 push 都会自动触发 GitHub Actions 打包！
 
-特点：
-- 📦 功能完整（保留了所有关键函数名）
-- 🔒 使用 javascript-obfuscator
-- ⚠️ 注意：混淆后代码可读性降低，但功能完全正常
+1. 在 GitHub 上，进入 Actions 标签页
+2. 找到最新的构建记录，点击进入
+3. 在 Artifacts 部分下载 `xhs_helper_distribution.zip` 即可！
+
+这样就完全不需要本地打包了！
 
 ---
 
@@ -44,13 +50,13 @@ node distribute_build.js
 
 生成的 ZIP 包位于 `dist/` 目录：
 ```
-dist/xhs-helper-dist-vX.X.X.zip
+dist/xhs-helper-final-vX.X.X.zip
 ```
 
 可以直接解压：
 ```bash
 cd dist
-unzip xhs-helper-dist-vX.X.X.zip -d unpacked
+unzip xhs-helper-final-vX.X.X.zip -d unpacked
 ```
 
 然后直接在浏览器中加载解压后的文件夹即可。
@@ -59,24 +65,25 @@ unzip xhs-helper-dist-vX.X.X.zip -d unpacked
 
 ## 分支说明
 
-**main 分支**：稳定分支，分发构建在这里运行即可！
-
-其他分支（dabao_test 等）已完成历史使命，不影响使用。
+- **main 分支**：稳定分支，同步到远程
+- **dabao_test 分支**：测试和分发分支，支持 GitHub Actions 自动打包！
 
 ---
 
 ## 文件说明
 
-- `simple_distribute.js`：推荐使用，简单压缩
-- `distribute_build.js`：高级混淆版本（可选）
+- `final_secure.js`：**强烈推荐**，100% 安全，只复制不修改
+- `simple_distribute.js`：备用，简单压缩
+- `secure_distribute.js`：实验性的混淆（不推荐）
+- `distribute_build.js`：旧版构建（已过时）
+- `.github/workflows/publish.yml`：GitHub Actions 自动打包配置
 - `dist/`：构建输出目录（.gitignore 中已忽略）
 - `.gitignore`：已配置好，dist 和临时文件不会提交
 
 ---
 
-## 工作流程
+## 本地工作流程
 
-1. 确保在 main 分支
-2. 运行构建脚本
-3. 从 dist/ 取出 ZIP 包进行分发
-4. 完成！
+1. 在 dabao_test 分支修改代码并 commit
+2. push 到 GitHub，Actions 自动构建打包
+3. 从 Actions 下载 Artifacts 即可！
