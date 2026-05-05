@@ -102,7 +102,6 @@ async function verifyAuthCode(authCode) {
       
       const authInfo = {
         token: authCode,
-        authId: data.data.auth_id,
         expiryDate: expiryDate,
         expiryTime: expiryTime,
         activatedDate: data.data.activated_date,
