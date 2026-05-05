@@ -8,6 +8,11 @@ dist/
 # Release directory
 release/
 
+# Temporary files
+.temp_*
+.simple_dist_temp
+.original_backup
+
 # IDE files
 .vscode/
 .idea/
