@@ -7,9 +7,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: xhs_helper_browser_extension
 
     steps:
       - uses: actions/checkout@v4
@@ -29,5 +26,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: xhs_helper_distribution
-          path: xhs_helper_browser_extension/dist/
+          path: dist/
           retention-days: 30
