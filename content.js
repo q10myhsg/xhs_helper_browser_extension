@@ -347,7 +347,7 @@ function init() {
 // 清理"大家都在搜"区域的多余下载按钮
 function cleanupExtraDownloadButtons() {
   // 查找所有下载按钮
-  const allDownloadButtons = document.querySelectorAll('.xhs-download-btn');
+  const allDownloadButtons = document.querySelectorAll('.hp-download-btn');
   
   allDownloadButtons.forEach(button => {
     let parent = button;
@@ -422,7 +422,7 @@ function addNoteDetailMouseEvents() {
   
   imgContainers.forEach((container, index) => {
     // 检查是否已经添加过
-    if (container.hasAttribute('data-xhs-detail-download-added')) {
+    if (container.hasAttribute('data-hp-detail-download-added')) {
       return;
     }
     
@@ -431,7 +431,7 @@ function addNoteDetailMouseEvents() {
     
     images.forEach((img, imgIndex) => {
       // 检查是否已经添加了下载按钮
-      if (!img.parentNode.querySelector('.xhs-download-btn')) {
+      if (!img.parentNode.querySelector('.hp-download-btn')) {
         // 只处理有src属性、不是空白图片、尺寸较大的图片
         if (img.src && 
             img.src.trim() !== '' && 
@@ -445,7 +445,7 @@ function addNoteDetailMouseEvents() {
     
     // 添加鼠标进入事件
     container.addEventListener('mouseenter', () => {
-      const buttons = container.querySelectorAll('.xhs-download-btn');
+      const buttons = container.querySelectorAll('.hp-download-btn');
       buttons.forEach(button => {
         button.style.display = 'flex';
       });
@@ -453,14 +453,14 @@ function addNoteDetailMouseEvents() {
     
     // 添加鼠标离开事件
     container.addEventListener('mouseleave', () => {
-      const buttons = container.querySelectorAll('.xhs-download-btn');
+      const buttons = container.querySelectorAll('.hp-download-btn');
       buttons.forEach(button => {
         button.style.display = 'none';
       });
     });
     
     // 标记为已添加
-    container.setAttribute('data-xhs-detail-download-added', 'true');
+    container.setAttribute('data-hp-detail-download-added', 'true');
   });
 }
 
@@ -1189,7 +1189,7 @@ function addNoteMouseEvents() {
   
   noteItems.forEach((noteItem, index) => {
     // 检查是否已经添加过
-    if (noteItem.hasAttribute('data-xhs-download-added')) {
+    if (noteItem.hasAttribute('data-hp-download-added')) {
       return;
     }
     
@@ -1198,7 +1198,7 @@ function addNoteMouseEvents() {
     
     images.forEach((img, imgIndex) => {
       // 检查是否已经添加了下载按钮
-      if (!img.parentNode.querySelector('.xhs-download-btn')) {
+      if (!img.parentNode.querySelector('.hp-download-btn')) {
         // 只处理有src属性、不是空白图片、不是头像的图片
         if (img.src && 
             img.src.trim() !== '' && 
@@ -1212,7 +1212,7 @@ function addNoteMouseEvents() {
     
     // 添加鼠标进入事件
     noteItem.addEventListener('mouseenter', () => {
-      const buttons = noteItem.querySelectorAll('.xhs-download-btn');
+      const buttons = noteItem.querySelectorAll('.hp-download-btn');
       buttons.forEach(button => {
         button.style.display = 'flex';
       });
@@ -1220,14 +1220,14 @@ function addNoteMouseEvents() {
     
     // 添加鼠标离开事件
     noteItem.addEventListener('mouseleave', () => {
-      const buttons = noteItem.querySelectorAll('.xhs-download-btn');
+      const buttons = noteItem.querySelectorAll('.hp-download-btn');
       buttons.forEach(button => {
         button.style.display = 'none';
       });
     });
     
     // 标记为已添加
-    noteItem.setAttribute('data-xhs-download-added', 'true');
+    noteItem.setAttribute('data-hp-download-added', 'true');
   });
 }
 
@@ -1247,7 +1247,7 @@ function injectDownloadButtons() {
     
     containerImages.forEach(img => {
       // 检查是否已经添加了下载按钮
-      if (!img.parentNode.querySelector('.xhs-download-btn')) {
+      if (!img.parentNode.querySelector('.hp-download-btn')) {
         // 只处理有src属性且不是空白图片的图片，并且宽度和高度都大于100
         if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder') && img.width > 100 && img.height > 100) {
           console.log(`为详情页图片添加下载按钮: ${img.src} (${img.width}x${img.height})`);
@@ -1285,7 +1285,7 @@ function addDownloadButton(img) {
   
   // 创建下载按钮容器
   const buttonContainer = document.createElement('div');
-  buttonContainer.className = 'xhs-download-btn';
+  buttonContainer.className = 'hp-download-btn';
   buttonContainer.style.cssText = `
     position: absolute;
     top: 10px;
@@ -1358,7 +1358,7 @@ function injectPopupNoteDownloadButtons() {
       const images = popup.querySelectorAll('img');
       images.forEach(img => {
         // 检查是否已经添加了下载按钮
-        if (!img.parentNode.querySelector('.xhs-download-btn')) {
+        if (!img.parentNode.querySelector('.hp-download-btn')) {
           // 只处理有src属性且不是空白图片的图片，并且宽度和高度都大于100
           if (img.src && img.src.trim() !== '' && !img.src.includes('placeholder') && img.width > 100 && img.height > 100) {
             addDownloadButton(img);
@@ -1448,11 +1448,11 @@ window.addEventListener('scroll', () => {
 // 为弹窗中的图片添加下载按钮
 function addPopupImageMouseEvents() {
   // 查找弹窗中的图片容器
-  const popupContainers = document.querySelectorAll('.media-container, .xhs-slider-container');
+  const popupContainers = document.querySelectorAll('.media-container, .hp-slider-container');
   
   popupContainers.forEach((container, index) => {
     // 检查是否已经添加过
-    if (container.hasAttribute('data-xhs-popup-download-added')) {
+    if (container.hasAttribute('data-hp-popup-download-added')) {
       return;
     }
     
@@ -1461,7 +1461,7 @@ function addPopupImageMouseEvents() {
     
     images.forEach((img, imgIndex) => {
       // 检查是否已经添加了下载按钮
-      if (!img.parentNode.querySelector('.xhs-download-btn')) {
+      if (!img.parentNode.querySelector('.hp-download-btn')) {
         // 只处理有src属性、不是空白图片、不是头像的图片
         if (img.src && 
             img.src.trim() !== '' && 
@@ -1475,7 +1475,7 @@ function addPopupImageMouseEvents() {
     
     // 添加鼠标进入事件
     container.addEventListener('mouseenter', () => {
-      const buttons = container.querySelectorAll('.xhs-download-btn');
+      const buttons = container.querySelectorAll('.hp-download-btn');
       buttons.forEach(button => {
         button.style.display = 'flex';
       });
@@ -1483,14 +1483,14 @@ function addPopupImageMouseEvents() {
     
     // 添加鼠标离开事件
     container.addEventListener('mouseleave', () => {
-      const buttons = container.querySelectorAll('.xhs-download-btn');
+      const buttons = container.querySelectorAll('.hp-download-btn');
       buttons.forEach(button => {
         button.style.display = 'none';
       });
     });
     
     // 标记为已添加
-    container.setAttribute('data-xhs-popup-download-added', 'true');
+    container.setAttribute('data-hp-popup-download-added', 'true');
   });
 }
 

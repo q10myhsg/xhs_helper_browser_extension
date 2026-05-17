@@ -17,10 +17,14 @@ async function generateMachineCode() {
       return result.machineCode;
     }
     
-    // 2. 尝试从浏览器的localStorage中获取已有的机器码
-    let machineCode = localStorage.getItem('xhs_plugin_machine_code');
+    // 2. 尝试从浏览器的localStorage中获取已有的机器码（兼容旧key）
+    let machineCode = localStorage.getItem('ext_machine_code')
+      || localStorage.getItem('xhs_plugin_machine_code');
     if (machineCode) {
       console.log('从localStorage获取已有机器码:', machineCode);
+      // 迁移到新key，清理旧key
+      localStorage.setItem('ext_machine_code', machineCode);
+      localStorage.removeItem('xhs_plugin_machine_code');
       // 同时更新到Chrome存储中
       await chrome.storage.sync.set({ machineCode });
       return machineCode;
@@ -36,7 +40,7 @@ async function generateMachineCode() {
     console.log('生成新机器码:', machineCode);
     
     // 4. 同时存储到localStorage和Chrome存储中
-    localStorage.setItem('xhs_plugin_machine_code', machineCode);
+    localStorage.setItem('ext_machine_code', machineCode);
     await chrome.storage.sync.set({ machineCode });
     return machineCode;
   } catch (error) {

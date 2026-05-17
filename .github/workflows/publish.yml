@@ -25,6 +25,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: xhs_helper_distribution
+          name: creator_helper_distribution
           path: dist/
           retention-days: 30

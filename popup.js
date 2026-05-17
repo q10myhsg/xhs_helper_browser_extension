@@ -6,8 +6,8 @@ function init() {
   initTabCloseListener();
   // 初始化时清理已关闭的标签页
   cleanupClosedTabs();
-  // 检测当前页面是否为小红书搜索页面
-  checkIfXiaohongshuSearchPage();
+  // 检测当前页面是否为目标平台搜索页面
+  checkIfSearchResultPage();
   
   // 添加筛选高价值笔记按钮的点击事件
   const filterBtn = document.getElementById('filter-high-value');
@@ -276,8 +276,8 @@ function copyToClipboard(text) {
     });
 }
 
-// 检测当前页面是否为小红书搜索页面
-function checkIfXiaohongshuSearchPage() {
+// 检测当前页面是否为目标平台搜索页面
+function checkIfSearchResultPage() {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const activeTab = tabs[0];
     if (activeTab && activeTab.url) {
@@ -288,7 +288,7 @@ function checkIfXiaohongshuSearchPage() {
       const promptList = document.getElementById('prompt-list');
       
       if (filterBtn && expandBtn && promptList) {
-        // 检查是否为小红书搜索页面（包含keyword参数）
+        // 检查是否为目标平台搜索页面（包含keyword参数）
         if (url.includes('xiaohongshu.com/search_result') && url.includes('keyword=')) {
           // 显示筛选高价值笔记按钮和关键词拓展按钮
           filterBtn.style.display = 'block';
@@ -321,8 +321,8 @@ function expandKeywords() {
       
       // 先检查一下URL是否是小红书
       if (!activeTab.url || !activeTab.url.includes('xiaohongshu.com')) {
-        console.error('当前页面不是小红书页面');
-        alert('请在小红书页面使用关键词拓展功能');
+        console.error('当前页面不是目标内容平台页面');
+        alert('请在目标内容平台页面使用关键词拓展功能');
         window.close();
         return;
       }

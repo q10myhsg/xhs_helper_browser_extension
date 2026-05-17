@@ -100,7 +100,7 @@ async function build() {
   const zip = new AdmZip();
   zip.addLocalFolder(TEMP_DIR);
   
-  const zipFileName = `xhs-helper-v${version}.zip`;
+  const zipFileName = `creator-helper-v${version}.zip`;
   const zipFilePath = path.join(RELEASE_DIR, zipFileName);
   zip.writeZip(zipFilePath);
   

@@ -272,7 +272,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (enableDownload) {
               downloadNoteImages(message.noteUrl, sendResponse);
             } else {
-              sendResponse({ success: false, error: '小红书图片下载功能已关闭' });
+              sendResponse({ success: false, error: '笔记图片下载功能已关闭' });
             }
           });
         });
@@ -303,7 +303,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // 下载文件到xhs_helper目录
       chrome.downloads.download({
         url: dataUrl,
-        filename: `xhs_helper/${fileName}`,
+        filename: `creator_helper/${fileName}`,
         saveAs: false,
         conflictAction: 'overwrite'
       }, (downloadId) => {
@@ -311,7 +311,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           console.error('文件保存失败:', chrome.runtime.lastError);
           sendResponse({ success: false, error: chrome.runtime.lastError.message });
         } else {
-          console.log('文件保存成功:', `xhs_helper/${fileName}`);
+          console.log('文件保存成功:', `creator_helper/${fileName}`);
           sendResponse({ success: true });
         }
       });
@@ -534,7 +534,7 @@ async function downloadContent(noteInfo) {
   }
   
   // 创建保存目录（使用相对路径，Chrome 会将其解析为相对于默认下载目录的路径）
-  const saveDir = `xhs_helper/xhs_images/${noteId}`;
+  const saveDir = `creator_helper/note_images/${noteId}`;
   
   // 保存笔记信息为 content.json 文件
   try {

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "小红书助手",
+  "name": "创作助手",
   "version": "1.1.0",
-  "description": "帮助自媒体作者提升小红书创作效率",
+  "description": "帮助自媒体提升内容创作与素材管理效率",
   "permissions": [
     "storage",
     "activeTab",

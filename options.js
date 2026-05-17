@@ -791,7 +791,7 @@ function exportPrompts() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `xhs-prompts-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `prompts-export-${new Date().toISOString().split('T')[0]}.json`;
     
     // 触发下载
     document.body.appendChild(a);

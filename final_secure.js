@@ -44,7 +44,7 @@ async function buildFinalSecure() {
   const zip = new AdmZip();
   zip.addLocalFolder(TEMP_DIR);
   
-  const zipFileName = `xhs-helper-final-v${version}.zip`;
+  const zipFileName = `creator-helper-final-v${version}.zip`;
   const zipFilePath = path.join(RELEASE_DIR, zipFileName);
   zip.writeZip(zipFilePath);
   

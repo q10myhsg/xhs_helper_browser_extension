@@ -1,7 +1,7 @@
 {
-  "name": "xhs-helper-extension",
+  "name": "creator-helper-extension",
   "version": "1.1.0",
-  "description": "小红书助手浏览器扩展",
+  "description": "帮助自媒体提升内容创作与素材管理效率",
   "scripts": {
     "build": "node build.js"
   },

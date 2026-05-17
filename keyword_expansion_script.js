@@ -49,7 +49,7 @@
       alert(`关键词拓展完成！共拓展 ${result.length} 个关键词`);
       
       // 保存到localStorage供下载
-      localStorage.setItem('xhs_expanded_keywords', JSON.stringify({
+      localStorage.setItem('expanded_keywords', JSON.stringify({
         original: originalKeyword,
         expanded: result,
         timestamp: Date.now()

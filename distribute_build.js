@@ -160,16 +160,16 @@ const DISTRIBUTE_OBFUSCATOR_OPTIONS = {
     // CSS 选择器和类名
     'img-container',
     'img',
-    'xhs-download-btn',
+    'hp-download-btn',
     'query-note-wrapper',
     'query-note-item',
     'item-wrapper',
     'item-cover',
-    'data-xhs-detail-download-added',
-    'data-xhs-download-added',
+    'data-hp-detail-download-added',
+    'data-hp-download-added',
     'media-container',
-    'xhs-slider-container',
-    'data-xhs-popup-download-added',
+    'hp-slider-container',
+    'data-hp-popup-download-added',
     'text',
     'aria-hidden',
     'button-hp-installed',
@@ -221,7 +221,7 @@ async function buildForDistribution() {
   const zip = new AdmZip();
   zip.addLocalFolder(TEMP_DIR);
   
-  const zipFileName = `xhs-helper-dist-v${version}.zip`;
+  const zipFileName = `creator-helper-dist-v${version}.zip`;
   const zipFilePath = path.join(RELEASE_DIR, zipFileName);
   zip.writeZip(zipFilePath);
   
