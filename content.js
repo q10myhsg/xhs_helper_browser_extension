@@ -1264,6 +1264,58 @@ function injectDownloadButtons() {
   console.log('小红书图片处理完成');
 }
 
+// ============================================================
+// 根据图片所在位置，获取正确的笔记 URL
+// - 详情页：返回当前页面 URL
+// - 列表页：向上找 <a> 标签的 href（包含 xsec_token 等完整参数）
+// ============================================================
+function getNoteUrl(img) {
+  // 情况1：当前是笔记详情页，直接返回页面URL
+  const noteContainer = document.querySelector('#noteContainer.note-container');
+  if (noteContainer) {
+    return window.location.href;
+  }
+
+  // 情况2：当前是列表页，向上在图片的祖先节点中找 <a> 标签
+  let node = img;
+  for (let i = 0; i < 15 && node; i++) {
+    if (node.tagName === 'A' && node.href) {
+      const h = node.href;
+      if (h.includes('xiaohongshu.com') &&
+          (h.includes('/explore/') ||
+           h.includes('/discovery/item/') ||
+           h.includes('/search_result/') ||
+           h.includes('/user/profile/'))) {
+        return h;
+      }
+    }
+    node = node.parentNode;
+  }
+
+  // 情况3：在 noteItem 容器中找第一个 <a> 标签
+  let noteItem = img;
+  for (let i = 0; i < 10 && noteItem; i++) {
+    if (noteItem.tagName === 'SECTION' ||
+        (noteItem.classList && (
+          noteItem.classList.contains('note-item') ||
+          noteItem.classList.contains('note-card') ||
+          noteItem.classList.contains('feeds-container') ||
+          noteItem.classList.contains('note-container')
+        ))) {
+      const link = noteItem.querySelector('a[href*="xiaohongshu.com"]');
+      if (link && link.href) {
+        return link.href;
+      }
+      break;
+    }
+    noteItem = noteItem.parentNode;
+  }
+
+  // 兜底：返回当前页面 URL
+  console.warn('[下载] 未找到笔记链接，返回当前页面URL');
+  return window.location.href;
+}
+
 // 为图片添加下载按钮
 function addDownloadButton(img) {
   // 检查是否在"大家都在搜"区域，跳过这些区域
@@ -1315,13 +1367,9 @@ function addDownloadButton(img) {
     imgParent.style.position = 'relative';
   }
   
-  // 获取笔记链接
-  let noteUrl = window.location.href;
-  
-  // 尝试从图片的父元素中查找a标签获取笔记链接
-  if (imgParent && imgParent.href) {
-    noteUrl = imgParent.href;
-  }
+  // 获取笔记链接（从页面DOM中找真正的笔记链接，确保带 xsec_token 等参数）
+  const noteUrl = getNoteUrl(img);
+  console.log('[下载] 获取到笔记链接:', noteUrl);
   
   // 添加点击事件处理
   buttonContainer.addEventListener('click', (e) => {

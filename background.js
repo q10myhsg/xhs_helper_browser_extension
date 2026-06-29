@@ -443,9 +443,9 @@ function extractNoteId(noteUrl) {
 // 解析笔记内容
 function parseNote(htmlContent, noteUrl, noteId) {
   try {
-    // 1. 提取标题
+    // 1. 提取标题（同时支持 name="og:title" 和 property="og:title"）
     let title = '';
-    const titleMatch = htmlContent.match(/<meta name="og:title" content="([^"]+)"/i);
+    const titleMatch = htmlContent.match(/<meta\s+(?:name|property)="og:title"\s+content="([^"]+)"/i);
     if (titleMatch && titleMatch[1]) {
       title = titleMatch[1];
       // 移除末尾的 " - 小红书"
@@ -453,10 +453,10 @@ function parseNote(htmlContent, noteUrl, noteId) {
         title = title.substring(0, title.length - 6);
       }
     }
-    
-    // 2. 提取图片链接
+
+    // 2. 提取图片链接（只支持 property="og:image"）
     const imageUrls = [];
-    const imageMetaMatches = htmlContent.matchAll(/<meta name="og:image" content="([^"]+)"/gi);
+    const imageMetaMatches = htmlContent.matchAll(/<meta\s+property="og:image"\s+content="([^"]+)"/gi);
     for (const match of imageMetaMatches) {
       if (match[1]) {
         const fullUrl = normalizeImageUrl(match[1]);
@@ -465,19 +465,19 @@ function parseNote(htmlContent, noteUrl, noteId) {
         }
       }
     }
-    
-    // 3. 提取标签
+
+    // 3. 提取标签（同时支持 name="keywords" 和 property="keywords"）
     let tags = [];
-    const keywordsMatch = htmlContent.match(/<meta name="keywords" content="([^"]+)"/i);
+    const keywordsMatch = htmlContent.match(/<meta\s+(?:name|property)="keywords"\s+content="([^"]+)"/i);
     if (keywordsMatch && keywordsMatch[1]) {
       const keywords = keywordsMatch[1];
       // 处理不同的分隔符
       tags = keywords.split(/[,，]/).map(tag => tag.trim()).filter(tag => tag);
     }
-    
-    // 4. 提取正文内容
+
+    // 4. 提取正文内容（同时支持 name="description" 和 property="description"）
     let content = '';
-    const descriptionMatch = htmlContent.match(/<meta name="description" content="([^"]+)"/i);
+    const descriptionMatch = htmlContent.match(/<meta\s+(?:name|property)="description"\s+content="([^"]+)"/i);
     if (descriptionMatch && descriptionMatch[1]) {
       content = descriptionMatch[1];
     }
