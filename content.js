@@ -319,6 +319,7 @@ function init() {
         }
         
         const settings = data.downloadSettings || {};
+        window.cachedSettings = settings; // 缓存设置
         const enableDownload = settings.enableDownload !== false; // 默认开启
         
         if (enableDownload) {
@@ -338,6 +339,29 @@ function init() {
           
           // 添加 MutationObserver 监听 DOM 变化（监听弹窗打开）
           setupMutationObserver();
+        }
+        
+        // 如果是搜索页面，自动触发点赞数过滤
+        const isSearchPage = 
+          (window.location.pathname.startsWith('/search_result') && 
+           window.location.search.includes('keyword=')) ||
+          window.location.pathname.match(/^\/search_result\/[a-f0-9]+/i);
+        
+        if (isSearchPage) {
+          const enableLikeFilter = settings.enableLikeFilter !== false; // 默认开启
+          if (enableLikeFilter) {
+            const likeThreshold = settings.likeThreshold || 30;
+            console.log(`页面加载完成，自动触发点赞数过滤，阈值: ${likeThreshold}`);
+            
+            // 延迟执行，确保内容加载完成
+            setTimeout(() => {
+              filterByLikeCount(likeThreshold);
+            }, 1500);
+            
+            setTimeout(() => {
+              filterByLikeCount(likeThreshold);
+            }, 3000);
+          }
         }
       });
     });
@@ -476,7 +500,11 @@ async function executeSearchAutomation(settings) {
     }, 1000);
   });
   
-  // 2. 点击图文按钮（必须执行）
+  // 2. 鼠标进入筛选按钮（先打开筛选面板）
+  console.log('尝试鼠标进入筛选按钮');
+  await mouseenterFilterButton();
+  
+  // 3. 点击图文按钮（必须执行，在筛选面板中点击）
   console.log('尝试点击图文按钮');
   clickImageTextButton();
   // 等待图文按钮点击后页面响应
@@ -485,10 +513,6 @@ async function executeSearchAutomation(settings) {
       resolve();
     }, 1000);
   });
-  
-  // 3. 鼠标进入筛选按钮
-  console.log('尝试鼠标进入筛选按钮');
-  await mouseenterFilterButton();
   
   // 4. 选择排序依据
   console.log('尝试选择排序依据:', settings.sortBy);
@@ -524,7 +548,7 @@ async function executeSearchAutomation(settings) {
   // });
   
   // 10. 筛选点赞量大于设置阈值的笔记
-  const enableLikeFilter = settings.enableLikeFilter === true; // 默认不开启
+  const enableLikeFilter = settings.enableLikeFilter !== false; // 默认开启
   if (enableLikeFilter) {
     const likeThreshold = settings.likeThreshold || 30;
     console.log(`开始筛选点赞量大于${likeThreshold}的笔记`);
@@ -577,34 +601,73 @@ function moveMouseToBottomLeft() {
 
 // 筛选点赞量大于指定值的笔记
 function filterByLikeCount(threshold) {
-  console.log(`开始执行filterByLikeCount函数，阈值: ${threshold}`);
+  console.log(`========== 开始执行filterByLikeCount函数，阈值: ${threshold} ==========`);
   
-  // 查找所有笔记项
-  const noteItems = document.querySelectorAll('section.note-item');
-  console.log(`找到 ${noteItems.length} 个笔记项`);
+  // 搜索页面的笔记项选择器（按优先级排序）
+  const noteSelectors = [
+    'section.note-item',
+    '.note-item',
+    '[class*="note-item"]',
+    '.search-result-list .note-item',
+    '.search-notes .note-item',
+    '.results .note-item',
+    '.feeds-container .note-item',
+    '.feed-item',
+    '[class*="feed-item"]',
+    '.search-card',
+    '[class*="search-card"]',
+    '.note-card',
+    '[class*="note-card"]'
+  ];
   
-  // 如果没有找到笔记项，尝试其他选择器
-  if (noteItems.length === 0) {
-    console.log('未找到section.note-item，尝试其他选择器');
-    const alternativeNoteSelectors = [
-      '.note-item',
-      '[class*="note-item"]',
-      'div[class*="note"]'
-    ];
-    
-    for (const selector of alternativeNoteSelectors) {
-      const altNoteItems = document.querySelectorAll(selector);
-      if (altNoteItems.length > 0) {
-        console.log(`使用替代选择器找到笔记项: ${selector}，数量: ${altNoteItems.length}`);
-        processNoteItems(altNoteItems, threshold);
-        return;
+  let noteItems = null;
+  let usedSelector = '';
+  
+  for (const selector of noteSelectors) {
+    const items = document.querySelectorAll(selector);
+    if (items.length > 0) {
+      console.log(`使用选择器 "${selector}" 找到 ${items.length} 个笔记项`);
+      
+      // 验证一下这些元素是否真的是笔记（检查是否有点赞数或封面图）
+      let validCount = 0;
+      for (const item of items) {
+        if (item.querySelector('[class*="like"], [class*="count"], img')) {
+          validCount++;
+        }
+      }
+      
+      if (validCount > items.length * 0.3) {
+        noteItems = items;
+        usedSelector = selector;
+        break;
+      } else {
+        console.log(`选择器 "${selector}" 找到的元素中只有 ${validCount}/${items.length} 个有效，继续尝试`);
       }
     }
+  }
+  
+  // 如果还是没找到，打印页面结构供调试
+  if (!noteItems || noteItems.length === 0) {
+    console.log('未找到笔记项，打印页面主要结构供调试:');
     
-    console.log('确实未找到任何笔记项');
+    // 查找可能的列表容器
+    const possibleContainers = document.querySelectorAll(
+      'section, .feeds, .feed-list, .note-list, .search-list, .results, [class*="note-list"], [class*="feed-list"], [class*="search-list"]'
+    );
+    console.log(`找到 ${possibleContainers.length} 个可能的列表容器:`);
+    possibleContainers.forEach((container, i) => {
+      console.log(`容器 ${i + 1}:`, container.tagName, container.className);
+      console.log(`  子元素数量: ${container.children.length}`);
+      if (container.children.length > 0) {
+        console.log(`  第一个子元素:`, container.children[0].tagName, container.children[0].className);
+      }
+    });
+    
+    console.log('========== 过滤函数结束，未找到笔记项 ==========');
     return;
   }
   
+  console.log(`最终使用选择器: "${usedSelector}"，共 ${noteItems.length} 个笔记项`);
   processNoteItems(noteItems, threshold);
 }
 
@@ -612,57 +675,98 @@ function filterByLikeCount(threshold) {
 function processNoteItems(noteItems, threshold) {
   let hiddenCount = 0;
   let visibleCount = 0;
+  let noLikeCount = 0;
   
   console.log(`开始处理 ${noteItems.length} 个笔记项`);
   
+  // 点赞数元素的多种选择器（按优先级排序）
+  const likeCountSelectors = [
+    '.like-wrapper .count',
+    '.like-wrapper .like-count',
+    '.like-count',
+    '[class*="like-wrapper"] [class*="count"]',
+    '[class*="like"] [class*="count"]',
+    '.note-footer .count',
+    '.note-interaction .count',
+    '[class*="footer"] [class*="count"]',
+    '[class*="interaction"] [class*="count"]',
+    '.count',
+    'span[class*="count"]',
+    'span[class*="like"]',
+    '[class*="like-wrapper"]',
+    '[class*="like-btn"]',
+    '.like-btn .count',
+    '.like-btn'
+  ];
+  
+  // 对第一个笔记项打印详细的HTML结构，帮助调试
+  if (noteItems.length > 0) {
+    console.log('第一个笔记项的HTML结构（前2000字符）:');
+    console.log(noteItems[0].outerHTML.substring(0, 2000));
+  }
+  
   noteItems.forEach((item, index) => {
-    console.log(`处理第 ${index + 1} 个笔记项`);
-    // 查找点赞数
-    const likeCountElement = item.querySelector('.like-wrapper .count');
+    // 查找点赞数元素，尝试多种选择器
+    let likeCountElement = null;
+    let usedLikeSelector = '';
+    
+    for (const selector of likeCountSelectors) {
+      try {
+        const element = item.querySelector(selector);
+        if (element && element.textContent && element.textContent.trim() !== '') {
+          const text = element.textContent.trim();
+          // 验证文本内容是否合理（包含数字或"赞"字，且长度小于20）
+          if ((text === '赞' || /\d/.test(text)) && text.length < 20) {
+            likeCountElement = element;
+            usedLikeSelector = selector;
+            break;
+          }
+        }
+      } catch (e) {
+        // 忽略选择器错误
+      }
+    }
+    
     if (likeCountElement) {
-      // console.log('找到点赞数元素:', likeCountElement);
       const likeCountText = likeCountElement.textContent.trim();
-      console.log('点赞数文本:', likeCountText);
       
       // 处理点赞数显示为"赞"的情况，视为0赞
       let likeCount = 0;
       if (likeCountText === '赞') {
-        console.log('点赞数显示为"赞"，视为0赞');
         likeCount = 0;
       } else {
-        // 移除可能的非数字字符
-        likeCount = parseInt(likeCountText.replace(/[^0-9]/g, ''));
-        // 如果解析失败，视为0赞
-        if (isNaN(likeCount)) {
-          console.log('无法解析点赞数，视为0赞');
-          likeCount = 0;
+        // 处理万级单位，如 "1.2万"
+        if (likeCountText.includes('万')) {
+          const num = parseFloat(likeCountText.replace(/[^0-9.]/g, ''));
+          likeCount = Math.floor(num * 10000);
+        } else {
+          // 移除可能的非数字字符
+          likeCount = parseInt(likeCountText.replace(/[^0-9]/g, ''));
+          // 如果解析失败，视为0赞
+          if (isNaN(likeCount)) {
+            likeCount = 0;
+          }
         }
       }
       
-      console.log(`笔记点赞数: ${likeCount}`);
-      
       if (likeCount < threshold) {
         // 隐藏点赞数小于阈值的笔记
-        // console.log(`准备隐藏笔记，点赞数: ${likeCount} < ${threshold}`);
-        // 使用display: none确保元素不占据空间
         item.style.display = 'none';
         hiddenCount++;
-        console.log(`隐藏笔记，点赞数: ${likeCount}`);
       } else {
         // 确保点赞数大于等于阈值的笔记可见
-        // item.style.display = 'block';
-        // item.style.visibility = '';
-        // item.style.height = '';
-        // item.style.margin = '';
-        // item.style.padding = '';
+        item.style.display = '';
         visibleCount++;
-        console.log(`显示笔记，点赞数: ${likeCount}`);
       }
-    } 
+    } else {
+      noLikeCount++;
+      // 找不到点赞数的笔记也隐藏（避免低质量内容）
+      // item.style.display = 'none';
+    }
   });
   
-  console.log(`筛选完成：显示 ${visibleCount} 个笔记，隐藏 ${hiddenCount} 个笔记`);
-  console.log('=====================');
+  console.log(`筛选完成：显示 ${visibleCount} 个，隐藏 ${hiddenCount} 个，未找到点赞数 ${noLikeCount} 个`);
+  console.log('==================================================');
 }
 
 
@@ -670,7 +774,7 @@ function processNoteItems(noteItems, threshold) {
 // 点击图文按钮
 function clickImageTextButton() {
   console.log('开始查找图文按钮');
-  // 尝试多种可能的图文按钮选择器，优先使用用户提供的精确选择器
+  
   const selectors = [
     '#image.channel',
     '#image',
@@ -680,69 +784,86 @@ function clickImageTextButton() {
     '.filter-btn',
     '.tab',
     '.category-item',
+    '.tags',
     '[class*="filter"]',
     '[class*="tab"]',
-    '[class*="category"]'
+    '[class*="category"]',
+    '[data-v-*] .filter-item',
+    '[data-v-*] .tab-item',
+    '[data-v-*] .tags',
+    '.ai-dropdown-panel .filter-item',
+    '.ai-dropdown-panel .tab-item',
+    '.ai-dropdown-panel .tags',
+    '.media-type-tabs .tab-item',
+    '.channel-tabs .tab-item',
+    '.content-type-tabs .tab-item'
   ];
   
   for (const selector of selectors) {
-    const elements = document.querySelectorAll(selector);
-    console.log(`查找 ${selector}，找到 ${elements.length} 个元素`);
-    
-    // 收集所有匹配的元素
-    const matchedElements = [];
-    for (const element of elements) {
-      if (element.textContent && element.textContent.includes('图文')) {
-        matchedElements.push(element);
-      }
-    }
-    
-    // 先过滤掉有扩展属性的元素
-    const filteredElements = [];
-    for (const element of matchedElements) {
-      const hasExtensionProps = 
-        element.getAttribute('aria-hidden') === 'true' ||
-        (element.style && element.style.zIndex === '-1') ||
-        element.getAttribute('button-hp-installed') ||
-        element.getAttribute('data-hp-kind') ||
-        (element.className && element.className.includes('hp-')) ||
-        (element.id && element.id.includes('hp-'));
+    try {
+      const elements = document.querySelectorAll(selector);
+      console.log(`查找 ${selector}，找到 ${elements.length} 个元素`);
       
-      if (!hasExtensionProps) {
-        filteredElements.push(element);
+      const matchedElements = [];
+      for (const element of elements) {
+        const text = element.textContent || '';
+        if (text.includes('图文')) {
+          matchedElements.push(element);
+        }
       }
-    }
-    
-    console.log(`匹配到 ${matchedElements.length} 个元素，过滤后剩余 ${filteredElements.length} 个`);
-    
-    // 优先使用过滤后的元素，如果没有则使用第一个匹配的
-    const targetElement = filteredElements.length > 0 ? filteredElements[0] : (matchedElements.length > 0 ? matchedElements[0] : null);
-    
-    if (targetElement) {
-      console.log('找到图文按钮:', targetElement);
-      targetElement.click();
-      return;
+      
+      const filteredElements = [];
+      for (const element of matchedElements) {
+        const style = window.getComputedStyle(element);
+        const hasExtensionProps = 
+          element.getAttribute('aria-hidden') === 'true' ||
+          style.zIndex === '-1' ||
+          style.opacity === '0' ||
+          (style.opacity && parseFloat(style.opacity) < 0.1) ||
+          element.getAttribute('button-hp-installed') ||
+          element.getAttribute('data-hp-kind') ||
+          (element.className && element.className.includes('hp-')) ||
+          (element.id && element.id.includes('hp-'));
+        
+        if (!hasExtensionProps) {
+          filteredElements.push(element);
+        }
+      }
+      
+      console.log(`匹配到 ${matchedElements.length} 个元素，过滤后剩余 ${filteredElements.length} 个`);
+      
+      const targetElement = filteredElements.length > 0 ? filteredElements[0] : (matchedElements.length > 0 ? matchedElements[0] : null);
+      
+      if (targetElement) {
+        console.log('找到图文按钮:', targetElement);
+        targetElement.click();
+        return;
+      }
+    } catch (error) {
+      console.log(`选择器 ${selector} 出错:`, error);
+      continue;
     }
   }
   
-  // 尝试通过文本内容查找
   const allElements = document.querySelectorAll('button, a, div, span');
   console.log(`通过文本内容查找，检查 ${allElements.length} 个元素`);
   
-  // 收集所有匹配的元素
   const matchedElements = [];
   for (const element of allElements) {
-    if (element.textContent && element.textContent.includes('图文')) {
+    const text = element.textContent || '';
+    if (text.includes('图文')) {
       matchedElements.push(element);
     }
   }
   
-  // 先过滤掉有扩展属性的元素
   const filteredElements = [];
   for (const element of matchedElements) {
+    const style = window.getComputedStyle(element);
     const hasExtensionProps = 
       element.getAttribute('aria-hidden') === 'true' ||
-      (element.style && element.style.zIndex === '-1') ||
+      style.zIndex === '-1' ||
+      style.opacity === '0' ||
+      (style.opacity && parseFloat(style.opacity) < 0.1) ||
       element.getAttribute('button-hp-installed') ||
       element.getAttribute('data-hp-kind') ||
       (element.className && element.className.includes('hp-')) ||
@@ -755,13 +876,26 @@ function clickImageTextButton() {
   
   console.log(`匹配到 ${matchedElements.length} 个元素，过滤后剩余 ${filteredElements.length} 个`);
   
-  // 优先使用过滤后的元素，如果没有则使用第一个匹配的
   const targetElement = filteredElements.length > 0 ? filteredElements[0] : (matchedElements.length > 0 ? matchedElements[0] : null);
   
   if (targetElement) {
     console.log('找到图文按钮:', targetElement);
     targetElement.click();
     return;
+  }
+  
+  console.log('未找到图文按钮，尝试通过 data 属性查找');
+  
+  const dataElements = document.querySelectorAll('[data-type], [data-value], [data-key]');
+  for (const element of dataElements) {
+    const dataType = element.getAttribute('data-type') || '';
+    const dataValue = element.getAttribute('data-value') || '';
+    if (dataType.includes('image') || dataValue.includes('image') || 
+        dataType.includes('图文') || dataValue.includes('图文')) {
+      console.log('通过 data 属性找到图文按钮:', element);
+      element.click();
+      return;
+    }
   }
   
   console.log('未找到图文按钮');
@@ -793,20 +927,37 @@ function mouseenterFilterButton() {
     for (const element of elements) {
       if (element.textContent && (element.textContent.includes('筛选') || element.textContent.includes('排序'))) {
         console.log('找到筛选按钮:', element);
-        // 触发鼠标进入事件
-        const mouseenterEvent = new MouseEvent('mouseenter', {
-          bubbles: false,
-          cancelable: true,
-          view: window
-        });
-        element.dispatchEvent(mouseenterEvent);
-        console.log('已触发鼠标进入事件');
-        // 添加停留时间 0.3 秒
+        
+        // 先尝试点击打开筛选面板
+        element.click();
+        console.log('已点击筛选按钮');
+        
         return new Promise(resolve => {
           setTimeout(() => {
-            console.log('鼠标悬停停留完成');
+            console.log('等待筛选面板显示');
+            
+            // 打印 filter-panel 的 HTML
+            console.log('======= filter-panel HTML =======');
+            const filterPanels = document.querySelectorAll('.filter-panel, [class*="filter-panel"], [class*="filter-dropdown"]');
+            filterPanels.forEach((panel, index) => {
+              console.log(`--- filter-panel ${index + 1} ---`);
+              console.log(panel.outerHTML);
+            });
+            
+            // 如果没有找到 filter-panel，打印所有可能的筛选面板
+            if (filterPanels.length === 0) {
+              console.log('未找到 filter-panel，尝试查找其他面板...');
+              const allPanels = document.querySelectorAll('.panel, .dropdown, .menu');
+              allPanels.forEach((panel, index) => {
+                if (panel.textContent && panel.textContent.includes('图文')) {
+                  console.log(`--- 包含"图文"的面板 ${index + 1} ---`);
+                  console.log(panel.outerHTML);
+                }
+              });
+            }
+            
             resolve();
-          }, 300);
+          }, 500);
         });
       }
     }
@@ -818,20 +969,16 @@ function mouseenterFilterButton() {
   for (const element of allElements) {
     if (element.textContent && (element.textContent.includes('筛选') || element.textContent.includes('排序'))) {
       console.log('找到筛选按钮:', element);
-      // 触发鼠标进入事件
-        const mouseenterEvent = new MouseEvent('mouseenter', {
-          bubbles: false,
-          cancelable: true,
-          view: window
-        });
-        element.dispatchEvent(mouseenterEvent);
-        console.log('已触发鼠标进入事件');
-      // 添加停留时间 0.3 秒
+      
+      // 点击打开筛选面板
+      element.click();
+      console.log('已点击筛选按钮');
+      
       return new Promise(resolve => {
         setTimeout(() => {
-          console.log('鼠标悬停停留完成');
+          console.log('等待筛选面板显示');
           resolve();
-        }, 300);
+        }, 500);
       });
     }
   }
@@ -1186,13 +1333,12 @@ async function selectPublishTime(publishTime) {
 // 为笔记添加鼠标进入事件，显示下载按钮
 function addNoteMouseEvents() {
   const noteItems = document.querySelectorAll('section.note-item');
-  
+
   noteItems.forEach((noteItem, index) => {
     // 检查是否已经添加过
     if (noteItem.hasAttribute('data-hp-download-added')) {
       return;
     }
-    
     // 先给所有图片添加下载按钮（隐藏状态）
     const images = noteItem.querySelectorAll('img');
     
@@ -1366,10 +1512,9 @@ function addDownloadButton(img) {
   if (getComputedStyle(imgParent).position === 'static') {
     imgParent.style.position = 'relative';
   }
-  
   // 获取笔记链接（从页面DOM中找真正的笔记链接，确保带 xsec_token 等参数）
   const noteUrl = getNoteUrl(img);
-  console.log('[下载] 获取到笔记链接:', noteUrl);
+  // console.log('[下载] 获取到笔记链接:', noteUrl);
   
   // 添加点击事件处理
   buttonContainer.addEventListener('click', (e) => {
@@ -1419,26 +1564,103 @@ function injectPopupNoteDownloadButtons() {
 
 // 下载笔记中的所有图片
 async function downloadNoteImages(noteUrl) {
+  console.log('[下载] 开始下载笔记图片:', noteUrl);
   try {
-    // 发送消息给后台脚本，让后台脚本处理HTTP请求
+    // 判断是否是弹窗/详情页
+    const isPopupOrDetail = document.querySelector('.media-container') || 
+                            document.querySelector('.xhs-slider-container') ||
+                            document.querySelector('.swiper.note-slider') ||
+                            document.querySelector('#noteContainer.note-container') ||
+                            document.querySelector('.note-detail');
+    
+    let imageUrls = [];
+    let noteTitle = '';
+    
+    if (isPopupOrDetail) {
+      // 弹窗/详情页：直接从 DOM 提取图片和标题，更准确
+      console.log('[下载] 弹窗/详情页，直接从 DOM 提取');
+      
+      // 提取图片
+      // 注意：swiper 轮播会复制前后几张图实现无缝循环，需要过滤掉带 swiper-slide-duplicate 类的复制 slide
+      const imgSelectors = [
+        '.swiper.note-slider .swiper-slide:not(.swiper-slide-duplicate) img',
+        '.media-container img',
+        '.xhs-slider-container img',
+        '#noteContainer.note-container img',
+        '.note-detail .note-content img'
+      ];
+      
+      const seen = new Set();
+      for (const sel of imgSelectors) {
+        const imgs = document.querySelectorAll(sel);
+        imgs.forEach(img => {
+          const src = img.src || img.dataset?.src || '';
+          if (src && !seen.has(src) && 
+              (src.includes('xiaohongshu') || src.includes('xhscdn.com')) &&
+              !src.includes('avatar') && !src.includes('Avatar')) {
+            seen.add(src);
+            imageUrls.push(src);
+          }
+        });
+        if (imageUrls.length > 0) break;
+      }
+      
+      // 提取标题
+      const titleSelectors = [
+        '.note-detail .title',
+        '.note-title',
+        '#detail-title',
+        'h1.title',
+        '.title-container .title'
+      ];
+      
+      for (const sel of titleSelectors) {
+        const el = document.querySelector(sel);
+        if (el && el.textContent.trim()) {
+          noteTitle = el.textContent.trim();
+          break;
+        }
+      }
+      
+      // 如果没找到标题，用 meta
+      if (!noteTitle) {
+        const metaTitle = document.querySelector('meta[property="og:title"]')?.content || 
+                         document.querySelector('meta[name="og:title"]')?.content;
+        if (metaTitle) noteTitle = metaTitle;
+      }
+      
+      console.log(`[下载] 从 DOM 提取到 ${imageUrls.length} 张图片，标题: ${noteTitle}`);
+    }
+    
+    // 发送消息给后台脚本
     safeChromeCall(() => {
+      console.log('[下载] 发送消息给 background');
       chrome.runtime.sendMessage(
-        { action: 'downloadNoteImages', noteUrl: noteUrl },
+        { 
+          action: 'downloadNoteImages', 
+          noteUrl: noteUrl,
+          imageUrls: imageUrls.length > 0 ? imageUrls : null,
+          title: noteTitle || null
+        },
         (response) => {
+          console.log('[下载] 收到 background 响应:', response);
           if (chrome.runtime.lastError) {
+            console.error('[下载] runtime.lastError:', chrome.runtime.lastError);
             alert('图片下载失败，请重试！');
             return;
           }
           
           if (response && response.success) {
-            // alert(`成功下载 ${response.downloadedCount} 张图片！`);
+            console.log('[下载] 成功，下载了', response.downloadedCount, '张图片');
           } else {
+            console.error('[下载] 失败，错误:', response ? response.error : '未知错误');
             alert('图片下载失败，请重试！');
           }
         }
       );
     });
   } catch (error) {
+    console.error('[下载] 异常:', error);
     alert('下载过程中出错，请重试！');
   }
 }
@@ -1458,9 +1680,13 @@ window.addEventListener('scroll', () => {
   }
   window.scrollTimeout = setTimeout(() => {
     if (window.location.hostname === 'www.xiaohongshu.com') {
-      // 1. 处理点赞数筛选（仅在搜索页面）
-      if (window.location.pathname.replace(/\/$/, '') === '/search_result' && 
-          window.location.search.includes('keyword=')) {
+      // 1. 处理点赞数筛选（搜索页面）
+      const isSearchPage = 
+        (window.location.pathname.startsWith('/search_result') && 
+         window.location.search.includes('keyword=')) ||
+        window.location.pathname.match(/^\/search_result\/[a-f0-9]+/i);
+      
+      if (isSearchPage) {
         // 每次滚动时都从 storage 读取可能性能较差，我们可以缓存设置
         if (!window.cachedSettings) {
           window.cachedSettings = {};
@@ -1478,7 +1704,7 @@ window.addEventListener('scroll', () => {
         
         function applyLikeFilter() {
           const settings = window.cachedSettings || {};
-          const enableLikeFilter = settings.enableLikeFilter === true;
+          const enableLikeFilter = settings.enableLikeFilter !== false; // 默认开启
           if (enableLikeFilter) {
             const likeThreshold = settings.likeThreshold || 30;
             filterByLikeCount(likeThreshold);
@@ -1660,8 +1886,10 @@ function findSearchInput() {
 async function getSearchSuggestions(keyword) {
   try {
     const suggestionSelectors = [
+      "div.ai-sug-container",
       "div.sug-container-wrapper.sug-pad",
-      "div.sug-container-wrapper.sug-pad[search-input-wrapper-el]"
+      "div.sug-container-wrapper.sug-pad[search-input-wrapper-el]",
+      "div.ai-dropdown-panel"
     ];
     
     let found = false;
@@ -1671,9 +1899,15 @@ async function getSearchSuggestions(keyword) {
       try {
         const suggestionBox = document.querySelector(selector);
         if (suggestionBox) {
-          const items = suggestionBox.querySelectorAll("div[class*='item']");
+          const items = suggestionBox.querySelectorAll("div.sug-item");
           if (items.length > 0) {
             suggestionItems = items;
+            found = true;
+            break;
+          }
+          const itemsAlt = suggestionBox.querySelectorAll("div[class*='item']");
+          if (itemsAlt.length > 0) {
+            suggestionItems = itemsAlt;
             found = true;
             break;
           }
@@ -1701,11 +1935,14 @@ async function getSearchSuggestions(keyword) {
       }
     }
     
+    console.log(`[关键词拓展] 获取到 ${suggestions.length} 个建议词`);
+    
     const randomDelay = Math.random() * 500 + 1500;
     await new Promise(resolve => setTimeout(resolve, randomDelay));
     
     return [...new Set(suggestions)];
   } catch (error) {
+    console.error('[关键词拓展] 获取建议词出错:', error);
     return [];
   }
 }
