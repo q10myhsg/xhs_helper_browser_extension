@@ -1629,6 +1629,11 @@ async function downloadNoteImages(noteUrl) {
         if (metaTitle) noteTitle = metaTitle;
       }
       
+      // 去掉标题末尾的" - 小红书"后缀
+      if (noteTitle && noteTitle.endsWith(' - 小红书')) {
+        noteTitle = noteTitle.substring(0, noteTitle.length - 6);
+      }
+      
       console.log(`[下载] 从 DOM 提取到 ${imageUrls.length} 张图片，标题: ${noteTitle}`);
     }
     
